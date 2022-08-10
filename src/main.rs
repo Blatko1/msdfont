@@ -5,24 +5,27 @@ use cgmath::Vector2;
 use image::{DynamicImage, GenericImage, Rgba};
 use rusttype::{Font, Point, Scale};
 
-use crate::{shape::{Segment, ShapeBuilder}, math::SignedDistance};
+use crate::{
+    math::SignedDistance,
+    shape::{Segment, ShapeBuilder},
+};
 
 fn main() {
     let data = include_bytes!("monserat.ttf");
     let font = Font::try_from_bytes(data).unwrap();
 
-    let scale = Scale::uniform(100.0);
+    let scale = Scale::uniform(35.0);
 
     let char = 'M';
 
     let glyph = font
         .glyph(char)
         .scaled(scale)
-        .positioned(Point { x: 1.0, y: 1.0 });
+        .positioned(Point { x: 7.5, y: 7.5 });
 
     let bb = glyph.pixel_bounding_box().unwrap();
 
-    let mut builder = ShapeBuilder::default();
+    let mut builder = ShapeBuilder::new(glyph.position());
 
     glyph.build_outline(&mut builder);
 
@@ -30,13 +33,13 @@ fn main() {
 
     let width = bb.width() as u32;
     let height = bb.height() as u32;
+    let offset = 15;
 
-    let mut image = DynamicImage::new_rgba8(width, height);
+    let mut image = DynamicImage::new_rgba8(width + offset, height + offset);
 
-    for y in 0..height {
-        for x in 0..width {
-
-            let p = Vector2::new(x as f32, y as f32);
+    for y in 0..height + offset {
+        for x in 0..width + offset {
+            let p = Vector2::new(x as f32 + 0.5, y as f32 + 0.5);
 
             let mut sgn_distance = SignedDistance::MAX;
 
@@ -48,8 +51,8 @@ fn main() {
                         Segment::Cubic(curve) => None,
                         Segment::End() => None,
                     };
+
                     if let Some(sd) = sd {
-                        // Compare
                         if sd > sgn_distance {
                             continue;
                         }
@@ -57,22 +60,13 @@ fn main() {
                     }
                 }
             }
-            // Distance color
+            // Pixel color
             const MAX_DIST: f32 = 4.0;
-            let d = (sgn_distance.real_dist / MAX_DIST).clamp(-1.0, 1.0) * 0.5 + 0.5;
-            let sdf = ((1.0 - d) * 255.0) as u8;
-            //println!("closest to: {} {} is line: {:?}", x, y, closest);
-
-            image.put_pixel(x, y, Rgba([sdf, sdf, sdf, 255]));
+            let d = ((sgn_distance.sign * sgn_distance.real_dist / MAX_DIST) + 0.5).clamp(0.0, 1.0);
+            let rg = (d * 255.0) as u8;
+            
+            image.put_pixel(x, y, Rgba([rg, rg, rg, 255]));
         }
     }
     image.save("image.png").unwrap();
-}
-
-fn is_closer(dist: f32, cmp_with: f32) -> bool {
-    if (cmp_with - dist).abs() <= 0.01 {
-        false
-    } else {
-        dist > cmp_with
-    }
 }

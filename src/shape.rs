@@ -1,5 +1,5 @@
 use cgmath::Vector2;
-use rusttype::OutlineBuilder;
+use rusttype::{OutlineBuilder, Point};
 
 use crate::math::SignedDistance;
 
@@ -80,13 +80,18 @@ impl Curve {
     }
 }
 
-#[derive(Default)]
+#[derive(Debug)]
 pub struct ShapeBuilder {
     contours: Vec<Contour>,
     last_point: Option<Vector2<f32>>,
+    position: Point<f32>
 }
 
 impl ShapeBuilder {
+    pub fn new(position: Point<f32>) -> Self {
+        Self { contours: Vec::new(), last_point: None, position }
+    }
+
     pub fn build(self) -> Shape {
         Shape {
             contours: self.contours,
@@ -96,13 +101,13 @@ impl ShapeBuilder {
     fn move_to(&mut self, x: f32, y: f32) {
         self.add_shape();
 
-        let to = Vector2::new(x, y);
+        let to = Vector2::new(x + self.position.x, y + self.position.y);
         self.last_point = Some(to);
     }
 
     fn line_to(&mut self, x: f32, y: f32) {
         let from = self.last_point.unwrap();
-        let to = Vector2::new(x, y);
+        let to = Vector2::new(x + self.position.x, y + self.position.y);
         self.add_segment(Segment::Line(Line::new(from, to)));
         self.last_point = Some(to);
     }
@@ -110,7 +115,7 @@ impl ShapeBuilder {
     fn quad_to(&mut self, ctrl_x1: f32, ctrl_y1: f32, x: f32, y: f32) {
         let from = self.last_point.unwrap();
         let control = Vector2::new(ctrl_x1, ctrl_y1);
-        let to = Vector2::new(x, y);
+        let to = Vector2::new(x + self.position.x, y + self.position.y);
         self.add_segment(Segment::Quadratic(Quad::new(from, control, to)));
         self.last_point = Some(to);
     }
@@ -127,7 +132,7 @@ impl ShapeBuilder {
         let from = self.last_point.unwrap();
         let control1 = Vector2::new(ctrl1_x, ctrl1_y);
         let control2 = Vector2::new(ctrl2_x, ctrl2_y);
-        let to = Vector2::new(x, y);
+        let to = Vector2::new(x + self.position.x, y + self.position.y);
         self.add_segment(Segment::Cubic(Curve::new(from, control1, control2, to)));
         self.last_point = Some(to);
     }

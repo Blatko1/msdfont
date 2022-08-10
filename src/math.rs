@@ -23,10 +23,9 @@ impl SignedDistance {
 impl PartialOrd for SignedDistance {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         let diff = (self.real_dist - other.real_dist).abs();
-        if diff < 0.01 {
-            self.orthogonality.partial_cmp(&self.orthogonality)
-        }
-        else {
+        if diff == 0.0 {
+            other.orthogonality.partial_cmp(&self.orthogonality)
+        } else {
             self.real_dist.partial_cmp(&other.real_dist)
         }
     }
