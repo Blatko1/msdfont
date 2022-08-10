@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 rusttype = "0.9.2"
+image = "0.24.3"
+cgmath = "0.16.1"
