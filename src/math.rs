@@ -23,9 +23,10 @@ impl SignedDistance {
 impl PartialOrd for SignedDistance {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         use std::cmp::Ordering;
-        match self.real_dist.abs().partial_cmp(&other.real_dist.abs()) {
-            Some(Ordering::Less) => Some(Ordering::Less),
-            Some(Ordering::Greater) => Some(Ordering::Greater),
+        let diff = self.real_dist - other.real_dist;
+        match diff.abs().partial_cmp(&0.01) {
+            Some(Ordering::Less) => other.orthogonality.partial_cmp(&self.orthogonality),
+            Some(Ordering::Greater) => self.real_dist.partial_cmp(&other.real_dist),
             Some(Ordering::Equal) => other.orthogonality.partial_cmp(&self.orthogonality),
             None => None,
         }
@@ -50,10 +51,11 @@ pub fn line_sd(line: Line, point: Vector2<f32>) -> SignedDistance {
     let bezier = p0 + real_pos * p1_p0;
     let extended_bezier = p0 + extended_pos * p1_p0;
     let bezier_p = bezier - p;
+    let extend_bezier_p = extended_bezier - p;
 
     // Get the distance from current pixel "p" to bezier line.
     let real_dist = bezier_p.magnitude();
-    let extended_dist = extended_bezier.magnitude();
+    let extended_dist = extend_bezier_p.magnitude();
 
     // Invert the vector to get distance from bezier line to "p".
     let p_bezier = bezier_p.neg();

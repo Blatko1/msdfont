@@ -14,14 +14,15 @@ fn main() {
     let data = include_bytes!("monserat.ttf");
     let font = Font::try_from_bytes(data).unwrap();
 
-    let scale = Scale::uniform(80.0);
+    let scale = Scale::uniform(100.0);
+    let offset = 40;
 
-    let char = 'K';
+    let char = 'M';
 
     let glyph = font
         .glyph(char)
         .scaled(scale)
-        .positioned(Point { x: 20.0, y: 20.0 });
+        .positioned(Point { x: offset as f32 / 2.0, y: offset as f32 / 2.0 });
 
     let bb = glyph.pixel_bounding_box().unwrap();
 
@@ -33,7 +34,6 @@ fn main() {
 
     let width = bb.width() as u32;
     let height = bb.height() as u32;
-    let offset = 40;
 
     let mut image = DynamicImage::new_rgba8(width + offset, height + offset);
 
@@ -62,11 +62,15 @@ fn main() {
             }
             // Pixel color
             const MAX_DIST: f32 = 4.0;
-            let d = ((sgn_distance.sign * sgn_distance.real_dist / MAX_DIST) + 0.5).clamp(0.0, 1.0);
-            let rg = (d * 255.0) as u8;
+            // Used for normal SDF
+            let real_d = ((sgn_distance.sign * sgn_distance.real_dist / MAX_DIST) + 0.5).clamp(0.0, 1.0);
+            // Used for pseudo-SDF
+            let extended_d = ((sgn_distance.sign * sgn_distance.extended_dist / MAX_DIST) + 0.5).clamp(0.0, 1.0);
             
-            image.put_pixel(x, y, Rgba([rg, rg, rg, 255]));
+            let sdf = (extended_d * 255.0) as u8;
+            
+            image.put_pixel(x, y, Rgba([sdf, sdf, sdf, 255]));
         }
     }
-    image.save("output/test.png").unwrap();
+    image.save("output/M_char_pseudo.png").unwrap();
 }
