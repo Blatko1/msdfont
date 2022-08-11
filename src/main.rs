@@ -14,14 +14,14 @@ fn main() {
     let data = include_bytes!("monserat.ttf");
     let font = Font::try_from_bytes(data).unwrap();
 
-    let scale = Scale::uniform(35.0);
+    let scale = Scale::uniform(50.0);
 
-    let char = 'M';
+    let char = '#';
 
     let glyph = font
         .glyph(char)
         .scaled(scale)
-        .positioned(Point { x: 7.5, y: 7.5 });
+        .positioned(Point { x: 10.0, y: 10.0 });
 
     let bb = glyph.pixel_bounding_box().unwrap();
 
@@ -33,7 +33,7 @@ fn main() {
 
     let width = bb.width() as u32;
     let height = bb.height() as u32;
-    let offset = 15;
+    let offset = 20;
 
     let mut image = DynamicImage::new_rgba8(width + offset, height + offset);
 
@@ -53,7 +53,7 @@ fn main() {
                     };
 
                     if let Some(sd) = sd {
-                        if sd > sgn_distance {
+                        if sd >= sgn_distance {
                             continue;
                         }
                         sgn_distance = sd;
@@ -68,5 +68,5 @@ fn main() {
             image.put_pixel(x, y, Rgba([rg, rg, rg, 255]));
         }
     }
-    image.save("image.png").unwrap();
+    image.save("output.png").unwrap();
 }

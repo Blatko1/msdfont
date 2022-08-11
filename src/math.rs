@@ -15,18 +15,19 @@ impl SignedDistance {
     pub const MAX: Self = SignedDistance {
         extended_dist: f32::MAX,
         real_dist: f32::MAX,
-        orthogonality: f32::MAX,
-        sign: f32::MAX,
+        orthogonality: 0.0,
+        sign: f32::NAN,
     };
 }
 
 impl PartialOrd for SignedDistance {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        let diff = (self.real_dist - other.real_dist).abs();
-        if diff == 0.0 {
-            other.orthogonality.partial_cmp(&self.orthogonality)
-        } else {
-            self.real_dist.partial_cmp(&other.real_dist)
+        use std::cmp::Ordering;
+        match self.real_dist.abs().partial_cmp(&other.real_dist.abs()) {
+            Some(Ordering::Less) => Some(Ordering::Less),
+            Some(Ordering::Greater) => Some(Ordering::Greater),
+            Some(Ordering::Equal) => other.orthogonality.partial_cmp(&self.orthogonality),
+            None => None,
         }
     }
 }
@@ -56,12 +57,13 @@ pub fn line_sd(line: Line, point: Vector2<f32>) -> SignedDistance {
 
     // Invert the vector to get distance from bezier line to "p".
     let p_bezier = bezier_p.neg();
-    let orthogonality: f32 = if p_bezier.x == 0.0 && p_bezier.y == 0.0 {
+    let ortho: f32 = if p_bezier.x == 0.0 && p_bezier.y == 0.0 {
         0.0
     } else {
         p1_p0.normalize().perp_dot(p_bezier.normalize())
     };
-    let sign = orthogonality.signum();
+    let sign = ortho.signum();
+    let orthogonality = ortho.abs();
 
     SignedDistance {
         extended_dist,
