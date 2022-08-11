@@ -17,7 +17,7 @@ fn main() {
     let scale = Scale::uniform(100.0);
     let offset = 40;
 
-    let char = '#';
+    let char = 'M';
 
     let glyph = font
         .glyph(char)
@@ -61,7 +61,7 @@ fn main() {
                 }
             }
             // Pixel color
-            const MAX_DIST: f32 = 4.0;
+            const MAX_DIST: f32 = 6.0;
             // Used for normal SDF
             let real_d = ((sgn_distance.sign * sgn_distance.real_dist / MAX_DIST) + 0.5).clamp(0.0, 1.0);
             // Used for pseudo-SDF
@@ -72,5 +72,5 @@ fn main() {
             image.put_pixel(x, y, Rgba([sdf, sdf, sdf, 255]));
         }
     }
-    image.save("output/#_char_pseudo.png").unwrap();
+    image.save("output/M_char_pseudo.png").unwrap();
 }
