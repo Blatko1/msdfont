@@ -9,5 +9,8 @@ Later **pseudo-SDF**, **MSDF** and **MTSDF** will be implemented.
 
 This project wouldn't exist without *Chlumskys* **[msdfgen](https://github.com/Chlumsky/msdfgen)** and other Rust libraries which implement his algorithm.
 
-## Example of SDF
-![Signed Distance Field of '#' character](https://github.com/Blatko1/msdfont-rs/blob/master/output.png)
+## Examples of SDF
+![Signed Distance Field of '#' character](https://github.com/Blatko1/msdfont-rs/blob/master/output/%23_char.png)
+![Signed Distance Field of 'A' character](https://github.com/Blatko1/msdfont-rs/blob/master/output/A_char.png)
+![Signed Distance Field of 'K' character](https://github.com/Blatko1/msdfont-rs/blob/master/output/K_char.png)
+![Signed Distance Field of 'M' character](https://github.com/Blatko1/msdfont-rs/blob/master/output/M_char.png)
