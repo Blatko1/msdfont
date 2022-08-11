@@ -17,7 +17,7 @@ fn main() {
     let scale = Scale::uniform(100.0);
     let offset = 40;
 
-    let char = 'M';
+    let char = '#';
 
     let glyph = font
         .glyph(char)
@@ -72,5 +72,5 @@ fn main() {
             image.put_pixel(x, y, Rgba([sdf, sdf, sdf, 255]));
         }
     }
-    image.save("output/M_char_pseudo.png").unwrap();
+    image.save("output/#_char_pseudo.png").unwrap();
 }
