@@ -14,9 +14,9 @@ fn main() {
     let data = include_bytes!("monserat.ttf");
     let font = Font::try_from_bytes(data).unwrap();
 
-    let scale = Scale::uniform(100.0);
+    let scale = Scale::uniform(80.0);
 
-    let char = '#';
+    let char = 'K';
 
     let glyph = font
         .glyph(char)
@@ -61,12 +61,12 @@ fn main() {
                 }
             }
             // Pixel color
-            const MAX_DIST: f32 = 5.0;
+            const MAX_DIST: f32 = 4.0;
             let d = ((sgn_distance.sign * sgn_distance.real_dist / MAX_DIST) + 0.5).clamp(0.0, 1.0);
             let rg = (d * 255.0) as u8;
             
             image.put_pixel(x, y, Rgba([rg, rg, rg, 255]));
         }
     }
-    image.save("output.png").unwrap();
+    image.save("output/test.png").unwrap();
 }
