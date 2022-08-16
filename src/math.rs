@@ -1,7 +1,7 @@
-use std::ops::Neg;
+use std::{f32::consts::PI, ops::Neg, time::Duration};
 
-use crate::shape::Line;
-use cgmath::{InnerSpace, Vector2};
+use crate::shape::{Line, Quad};
+use cgmath::{InnerSpace, Vector2, Zero};
 
 #[derive(Debug, PartialEq)]
 pub struct SignedDistance {
@@ -25,21 +25,25 @@ impl PartialOrd for SignedDistance {
         use std::cmp::Ordering;
         let diff = self.real_dist - other.real_dist;
         match diff.abs().partial_cmp(&0.01) {
-            Some(Ordering::Less) => other.orthogonality.partial_cmp(&self.orthogonality),
+            Some(Ordering::Less) => {
+                other.orthogonality.partial_cmp(&self.orthogonality)
+            }
             Some(Ordering::Greater) => self.real_dist.partial_cmp(&other.real_dist),
-            Some(Ordering::Equal) => other.orthogonality.partial_cmp(&self.orthogonality),
+            Some(Ordering::Equal) => {
+                other.orthogonality.partial_cmp(&self.orthogonality)
+            }
             None => None,
         }
     }
 }
 
-pub fn line_sd(line: Line, point: Vector2<f32>) -> SignedDistance {
+pub fn signed_distance_from_line(line: Line, point: Vector2<f32>) -> SignedDistance {
     let p0 = line.from;
     let p1 = line.to;
     let p = point;
 
     let p_p0 = p - p0;
-    let p1_p0 = p1 - p0;
+    let p1_p0 = p1 - p0; // Is also the direction
 
     // Find the "t" from the line function
     // and restrict it to an interval [0.0, 1.0].
@@ -48,10 +52,10 @@ pub fn line_sd(line: Line, point: Vector2<f32>) -> SignedDistance {
 
     // Put "t" in bezier function and get the closest
     // point to the current pixel "p"
-    let bezier = p0 + real_pos * p1_p0;
     let extended_bezier = p0 + extended_pos * p1_p0;
-    let bezier_p = bezier - p;
     let extend_bezier_p = extended_bezier - p;
+    let bezier = p0 + real_pos * p1_p0;
+    let bezier_p = bezier - p;
 
     // Get the distance from current pixel "p" to bezier line.
     let real_dist = bezier_p.magnitude();
@@ -59,7 +63,7 @@ pub fn line_sd(line: Line, point: Vector2<f32>) -> SignedDistance {
 
     // Invert the vector to get distance from bezier line to "p".
     let p_bezier = bezier_p.neg();
-    let ortho: f32 = if p_bezier.x == 0.0 && p_bezier.y == 0.0 {
+    let ortho: f32 = if p_bezier.is_zero() {
         0.0
     } else {
         p1_p0.normalize().perp_dot(p_bezier.normalize())
@@ -73,4 +77,274 @@ pub fn line_sd(line: Line, point: Vector2<f32>) -> SignedDistance {
         orthogonality,
         sign,
     }
+}
+
+pub fn signed_distance_from_quad(quad: Quad, point: Vector2<f32>) -> SignedDistance {
+    let p0 = quad.from;
+    let p1 = quad.control;
+    let p2 = quad.to;
+    let p = point;
+
+    let v = p - p0;
+    let v1 = p1 - p0;
+    let v2 = p2 - 2.0 * p1 + p0;
+    // quadratic Bezier curve: (v2 · v2)t^3 + 3(v1 · v2)t^2 + (2*v1 · v1 − v2 · v)t − v1 · v = 0
+    // a * t^3 + b * t^2 + c * t + d = 0
+
+    let a = v2.dot(v2);
+    let b = 3.0 * v1.dot(v2);
+    let c = 2.0 * v1.dot(v1) - v2.dot(v);
+    let d = -v1.dot(v);
+
+    // Get roots:
+    let roots = find_cubic_roots(a, b, c, d);
+
+    let mut extended_pos = 0.0;
+    let mut real_pos = 0.0;
+    let mut closest_bezier = Vector2::new(f32::MAX, f32::MAX);
+    let mut smallest_dist2 = f32::MAX;  // Not square rooted
+
+    // Compare all roots to find the closest "t" and smallest distance.
+    for root in roots {
+        // Use clamped root in quadratic function.
+        let t = root.clamp(0.0, 1.0);
+        let bezier = t * t * v2 + 2.0 * t * v1 + p0;
+
+        // Then compare the distances for each root.
+        let dist2 = (bezier - p).magnitude2();
+        if dist2 < smallest_dist2 {
+            extended_pos = root;
+            real_pos = t;
+            closest_bezier = bezier;
+            smallest_dist2 = dist2;
+        }
+    }
+
+    // Get the distance from current pixel "p" to bezier line.
+    let extended_bezier = extended_pos * extended_pos * v2 + 2.0 * extended_pos * v1 + p0;
+    let extended_dist = (extended_bezier - p).magnitude();
+    let real_dist = smallest_dist2.sqrt();
+
+    // Invert the vector to get distance from bezier line to "p". TODO explain
+    let dir = 2.0 * v2 * real_pos + 2.0 * v1;
+    let p_bezier = p - closest_bezier;
+    let ortho: f32 = if p_bezier.is_zero() || dir.is_zero() {
+        0.0
+    } else {
+        dir.normalize().perp_dot(p_bezier.normalize())
+    };
+    let sign = ortho.signum();
+    let orthogonality = ortho.abs();
+
+    SignedDistance {
+        extended_dist,
+        real_dist,
+        orthogonality,
+        sign,
+    }
+}
+
+fn find_quadratic_roots(a: f32, b: f32, c: f32) -> Vec<f32> {
+    let discriminant = b * b - 4.0 * a * c;
+
+    if a == 0.0 {
+        if b == 0.0 {
+            return vec![];
+        }
+        return vec![-c / b];
+    }
+
+    if discriminant < 0.0 {
+        return vec![];
+    } else if discriminant > 0.0 {
+        let discriminant_sqrt = discriminant.sqrt();
+        // Root 1
+        let x1 = ((-b) - discriminant_sqrt) / 2.0 * a;
+        // Root 2
+        let x2 = ((-b) + discriminant_sqrt) / 2.0 * a;
+
+        return vec![x1, x2];
+    } else {
+        let extreme_x = -0.5 * b / a;
+        vec![extreme_x]
+    }
+}
+
+fn find_cubic_roots(
+    a: f32,
+    b: f32,
+    c: f32,
+    d: f32,
+) -> Vec<f32> {
+    if a == 0.0 {
+        return find_quadratic_roots(b, c, d);
+    }
+    //println!("a: {}, b: {}, c: {}, d: {}", a, b, c, d);
+
+    // All formulas and procedures are explained at: https://mathworld.wolfram.com/CubicFormula.html
+
+    let b = b / a;
+    let c = c / a;
+    let d = d / a;
+
+    let q = (3.0 * c - b * b) / 9.0;
+    let r = (9.0 * b * c - 27.0 * d - 2.0 * b * b * b) / 54.0;
+    let qqq = q * q * q;
+    let discriminant = qqq + r * r;
+    let third = 1.0 / 3.0;
+
+    if discriminant > 0.0 {
+        // D > 0.0
+        // Then there is only one root.
+        let s = (r + discriminant.sqrt()).cbrt();
+        let t = (r - discriminant.sqrt()).cbrt();
+        if s.is_nan() {
+            println!("s: {}", s);
+        }
+        if t.is_nan() {
+            println!("t: {}", t);
+        }
+        /*let temp = ((discriminant).sqrt() + r.abs()).powf(third);
+        let sign = r.signum();
+        let r = -sign * (temp + q / temp) - third * b;*/
+        let x1 = (s + t) - third * b; // TODO
+
+        //let x1 = 0.5; // TODO
+        return vec![x1];
+    }
+    // D <= 0.0, q < 0.0
+    // root1 = (2 * sqrt(-q)) * cos(theta/3) - (third * b);
+    // root2 = (2 * sqrt(-q)) * cos((theta + 2*pi)/3) - (third * b);
+    // root3 = (2 * sqrt(-q)) * cos((theta + 4*pi)/3) - (third * b);
+    // root = m * cos((theta + ...)/3) - n;
+    let two_pi = 2.0 * PI;
+    let theta = (r / (-qqq).sqrt()).acos();
+    let m = 2.0 * (-q).sqrt();
+    let n = b * third;
+    let x1 = m * (theta / 3.0).cos() - n;
+    let x2 = m * ((theta + two_pi) / 3.0).cos() - n;
+    let x3 = m * ((theta + 2.0 * two_pi) / 3.0).cos() - n;
+    if x1.is_nan() {
+        println!("x1 je nan D <= 0.0")
+    }
+    if x2.is_nan() {
+        println!("x2 je nan D <= 0.0")
+    }
+    if x3.is_nan() {
+        println!("x3 je nan D <= 0.0")
+    }
+
+    return vec![x1, x2, x3];
+}
+
+#[test]
+fn cubic_root_test1() {
+    let a = 1.0;
+    let b = 100.4;
+    let c = -100.4;
+    let d = -0.29;
+    let (roots, discriminant, q, r) = test_find_cubic_roots(a, b, c, d);
+
+    assert!(q < 0.0);
+    assert!(r < 0.0);
+    assert!(discriminant < 0.0);
+    /*for (i, r) in roots.iter().enumerate() {
+        println!("root{}: {}", i, r);
+    }*/
+}
+
+#[test]
+fn cubic_root_test2() {
+    let a = 1.0;
+    let b = -10.0;
+    let c = 1000.0;
+    let d = -2.0;
+    let (roots, discriminant, q, r) = test_find_cubic_roots(a, b, c, d);
+
+    assert!(q > 0.0);
+    //assert!(r > 0.0);
+    assert!(discriminant > 0.0);
+    /*for (i, r) in roots.iter().enumerate() {
+        println!("root{}: {}", i, r);
+    }*/
+}
+
+#[test]
+fn cubic_root_test3() {
+    let a = 1.0;
+    let b = -1.0;
+    let c = -1.6;
+    let d = 2.5;
+    let (roots, discriminant, q, r) = test_find_cubic_roots(a, b, c, d);
+
+    assert!(discriminant > 0.0);
+    /*for (i, r) in roots.iter().enumerate() {
+        println!("root{}: {}", i, r);
+    }*/
+}
+
+fn test_find_cubic_roots(
+    _a: f32,
+    _b: f32,
+    _c: f32,
+    _d: f32,
+) -> (Vec<f32>, f32, f32, f32) {
+    /*if a == 0.0 {
+        return find_quadratic_roots(b, c, d);
+    }*/
+    //println!("a: {}, b: {}, c: {}, d: {}", a, b, c, d);
+
+    // All formulas and procedures are explained at: https://mathworld.wolfram.com/CubicFormula.html
+
+    let b = _b / _a;
+    let c = _c / _a;
+    let d = _d / _a;
+
+    let q = (3.0 * c - b * b) / 9.0;
+    let r = (9.0 * b * c - 27.0 * d - 2.0 * b * b * b) / 54.0;
+    let qqq = q * q * q;
+    let discriminant = qqq + r * r;
+    let third = 1.0 / 3.0;
+
+    if discriminant > 0.0 {
+        // Then there is only one root.
+        let s = (r + discriminant.sqrt()).cbrt();
+        let t = (r - discriminant.sqrt()).cbrt();
+        if s.is_nan() {
+            println!("s: {}", s);
+        }
+        if t.is_nan() {
+            println!("t: {}", t);
+        }
+        /*let temp = ((discriminant).sqrt() + r.abs()).powf(third);
+        let sign = r.signum();
+        let r = -sign * (temp + q / temp) - third * b;*/
+        let x1 = (s + t) - third * b; // TODO
+
+        //let x1 = 0.5; // TODO
+        return (vec![x1], discriminant, q, r);
+    }
+    // D <= 0.0, q < 0.0
+    // root1 = (2 * sqrt(-q)) * cos(theta/3) - (third * b);
+    // root2 = (2 * sqrt(-q)) * cos((theta + 2*pi)/3) - (third * b);
+    // root3 = (2 * sqrt(-q)) * cos((theta + 4*pi)/3) - (third * b);
+    // root = m * cos((theta + ...)/3) - n;
+    let two_pi = 2.0 * PI;
+    let theta = (r / (-qqq).sqrt()).acos();
+    let m = 2.0 * (-q).sqrt();
+    let n = b * third;
+    let x1 = m * (theta / 3.0).cos() - n;
+    let x2 = m * ((theta + two_pi) / 3.0).cos() - n;
+    let x3 = m * ((theta + 2.0 * two_pi) / 3.0).cos() - n;
+    if x1.is_nan() {
+        println!("x1 je nan D <= 0.0")
+    }
+    if x2.is_nan() {
+        println!("x2 je nan D <= 0.0")
+    }
+    if x3.is_nan() {
+        println!("x3 je nan D <= 0.0")
+    }
+
+    return (vec![x1, x2, x3], discriminant, q, r);
 }
