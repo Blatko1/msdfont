@@ -7,7 +7,7 @@ use rusttype::{Font, Point, Scale};
 
 use crate::{
     math::SignedDistance,
-    shape::{Segment, ShapeBuilder, Quad},
+    shape::{Quad, Segment, ShapeBuilder},
 };
 
 fn main() {
@@ -15,9 +15,9 @@ fn main() {
     let font = Font::try_from_bytes(data).unwrap();
 
     let scale = Scale::uniform(100.0);
-    let offset = 120;
+    let offset = 20;
 
-    let char = 'Š';
+    let char = 'Đ';
 
     let glyph = font.glyph(char).scaled(scale).positioned(Point {
         x: offset as f32 / 2.0,
@@ -78,7 +78,7 @@ fn main() {
                 ((sgn_distance.sign * sgn_distance.extended_dist / MAX_DIST) + 0.5)
                     .clamp(0.0, 1.0);
 
-            let sdf = (real_d * 255.0) as u8;
+            let sdf = (extended_d * 255.0) as u8;
 
             image.put_pixel(x, y, Rgba([sdf, sdf, sdf, 255]));
         }

@@ -1,4 +1,4 @@
-use std::{f32::consts::PI, ops::Neg, time::Duration};
+use std::{f32::consts::PI, ops::Neg};
 
 use crate::shape::{Line, Quad};
 use cgmath::{InnerSpace, Vector2, Zero};
@@ -102,26 +102,29 @@ pub fn signed_distance_from_quad(quad: Quad, point: Vector2<f32>) -> SignedDista
     let mut extended_pos = 0.0;
     let mut real_pos = 0.0;
     let mut closest_bezier = Vector2::new(f32::MAX, f32::MAX);
-    let mut smallest_dist2 = f32::MAX;  // Not square rooted
+    let mut smallest_dist2 = f32::MAX; // Not square rooted
 
     // Compare all roots to find the closest "t" and smallest distance.
-    for root in roots {
-        // Use clamped root in quadratic function.
-        let t = root.clamp(0.0, 1.0);
-        let bezier = t * t * v2 + 2.0 * t * v1 + p0;
+    for r in roots {
+        if let Some(root) = r {
+            // Use clamped root in quadratic function.
+            let t = root.clamp(0.0, 1.0);
+            let bezier = t * t * v2 + 2.0 * t * v1 + p0;
 
-        // Then compare the distances for each root.
-        let dist2 = (bezier - p).magnitude2();
-        if dist2 < smallest_dist2 {
-            extended_pos = root;
-            real_pos = t;
-            closest_bezier = bezier;
-            smallest_dist2 = dist2;
+            // Then compare the distances for each root.
+            let dist2 = (bezier - p).magnitude2();
+            if dist2 < smallest_dist2 {
+                extended_pos = root;
+                real_pos = t;
+                closest_bezier = bezier;
+                smallest_dist2 = dist2;
+            }
         }
     }
 
     // Get the distance from current pixel "p" to bezier line.
-    let extended_bezier = extended_pos * extended_pos * v2 + 2.0 * extended_pos * v1 + p0;
+    let extended_bezier =
+        extended_pos * extended_pos * v2 + 2.0 * extended_pos * v1 + p0;
     let extended_dist = (extended_bezier - p).magnitude();
     let real_dist = smallest_dist2.sqrt();
 
@@ -144,101 +147,79 @@ pub fn signed_distance_from_quad(quad: Quad, point: Vector2<f32>) -> SignedDista
     }
 }
 
-fn find_quadratic_roots(a: f32, b: f32, c: f32) -> Vec<f32> {
+fn find_quadratic_roots(a: f32, b: f32, c: f32) -> [Option<f32>; 2] {
     let discriminant = b * b - 4.0 * a * c;
 
     if a == 0.0 {
         if b == 0.0 {
-            return vec![];
+            return [None, None];
         }
-        return vec![-c / b];
+        return [Some(-c / b), None];
     }
 
     if discriminant < 0.0 {
-        return vec![];
+        return [None, None];
     } else if discriminant > 0.0 {
         let discriminant_sqrt = discriminant.sqrt();
+        let a2 = 1.0 / (2.0 * a);
         // Root 1
-        let x1 = ((-b) - discriminant_sqrt) / 2.0 * a;
+        let x1 = -(b + discriminant_sqrt) * a2;
         // Root 2
-        let x2 = ((-b) + discriminant_sqrt) / 2.0 * a;
+        let x2 = (discriminant_sqrt - b) * a2;
 
-        return vec![x1, x2];
+        return [Some(x1), Some(x2)];
     } else {
         let extreme_x = -0.5 * b / a;
-        vec![extreme_x]
+        [Some(extreme_x), None]
     }
 }
 
-fn find_cubic_roots(
-    a: f32,
-    b: f32,
-    c: f32,
-    d: f32,
-) -> Vec<f32> {
+fn find_cubic_roots(a: f32, b: f32, c: f32, d: f32) -> [Option<f32>; 3] {
     if a == 0.0 {
-        return find_quadratic_roots(b, c, d);
+        let roots = find_quadratic_roots(b, c, d);
+        return [roots[0], roots[1], None];
     }
-    //println!("a: {}, b: {}, c: {}, d: {}", a, b, c, d);
 
     // All formulas and procedures are explained at: https://mathworld.wolfram.com/CubicFormula.html
 
-    let b = b / a;
+    let mut b = b / a;
     let c = c / a;
     let d = d / a;
 
-    let q = (3.0 * c - b * b) / 9.0;
-    let r = (9.0 * b * c - 27.0 * d - 2.0 * b * b * b) / 54.0;
-    let qqq = q * q * q;
-    let discriminant = qqq + r * r;
-    let third = 1.0 / 3.0;
+    let q = (b * b - 3.0 * c) / 9.0;
+    let r = (b * 2.0 * b * b - 9.0 * c * b + 27.0 * d) / 54.0;
 
-    if discriminant > 0.0 {
+    let qqq = q * q * q;
+    let rr = r * r;
+    let third = 1.0 / 3.0;
+    b *= third;
+
+    if rr > qqq {
         // D > 0.0
         // Then there is only one root.
-        let s = (r + discriminant.sqrt()).cbrt();
-        let t = (r - discriminant.sqrt()).cbrt();
-        if s.is_nan() {
-            println!("s: {}", s);
-        }
-        if t.is_nan() {
-            println!("t: {}", t);
-        }
-        /*let temp = ((discriminant).sqrt() + r.abs()).powf(third);
-        let sign = r.signum();
-        let r = -sign * (temp + q / temp) - third * b;*/
-        let x1 = (s + t) - third * b; // TODO
+        let s = -r.signum() * (r.abs() + (rr - qqq).sqrt()).cbrt();
+        let x1 = (s + q / s) - b; // TODO exclain // ALSO CAN BE q/s=t WHYY??
 
-        //let x1 = 0.5; // TODO
-        return vec![x1];
+        return [Some(x1), None, None];
     }
     // D <= 0.0, q < 0.0
     // root1 = (2 * sqrt(-q)) * cos(theta/3) - (third * b);
     // root2 = (2 * sqrt(-q)) * cos((theta + 2*pi)/3) - (third * b);
     // root3 = (2 * sqrt(-q)) * cos((theta + 4*pi)/3) - (third * b);
     // root = m * cos((theta + ...)/3) - n;
+    let q_sqrt = q.sqrt();
     let two_pi = 2.0 * PI;
-    let theta = (r / (-qqq).sqrt()).acos();
-    let m = 2.0 * (-q).sqrt();
-    let n = b * third;
-    let x1 = m * (theta / 3.0).cos() - n;
-    let x2 = m * ((theta + two_pi) / 3.0).cos() - n;
-    let x3 = m * ((theta + 2.0 * two_pi) / 3.0).cos() - n;
-    if x1.is_nan() {
-        println!("x1 je nan D <= 0.0")
-    }
-    if x2.is_nan() {
-        println!("x2 je nan D <= 0.0")
-    }
-    if x3.is_nan() {
-        println!("x3 je nan D <= 0.0")
-    }
+    let theta = (r / q_sqrt.powi(3)).acos();
+    let m = -2.0 * q_sqrt;
+    let x1 = m * (theta * third).cos() - b;
+    let x2 = m * ((theta + two_pi) * third).cos() - b;
+    let x3 = m * ((theta - two_pi) * third).cos() - b;
 
-    return vec![x1, x2, x3];
+    return [Some(x1), Some(x2), Some(x3)];
 }
 
 #[test]
-fn cubic_root_test1() {
+fn cubic_root_test() {
     let a = 1.0;
     let b = 100.4;
     let c = -100.4;
@@ -300,7 +281,7 @@ fn test_find_cubic_roots(
     let c = _c / _a;
     let d = _d / _a;
 
-    let q = (3.0 * c - b * b) / 9.0;
+    let q = (3.0 * c - b * b) / 9.0; // TODO explain why we negate numerator
     let r = (9.0 * b * c - 27.0 * d - 2.0 * b * b * b) / 54.0;
     let qqq = q * q * q;
     let discriminant = qqq + r * r;

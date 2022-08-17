@@ -122,7 +122,8 @@ impl ShapeBuilder {
 
     fn quad_to(&mut self, ctrl_x1: f32, ctrl_y1: f32, x: f32, y: f32) {
         let from = self.last_point.unwrap();
-        let control = Vector2::new(ctrl_x1 + self.position.x, ctrl_y1 + self.position.y);
+        let control =
+            Vector2::new(ctrl_x1 + self.position.x, ctrl_y1 + self.position.y);
         let to = Vector2::new(x + self.position.x, y + self.position.y);
         self.add_segment(Segment::Quadratic(Quad::new(from, control, to)));
         self.last_point = Some(to);
@@ -196,9 +197,18 @@ impl OutlineBuilder for ShapeBuilder {
 #[test]
 fn quad_curve_test() {
     let curve = Quad {
-        from: Vector2 { x: 114.5726, y: 75.58819 },
-        control: Vector2 { x: 54.5726, y: 75.58819 },
-        to: Vector2 { x: 112.56276, y: 82.80722 },
+        from: Vector2 {
+            x: 114.5726,
+            y: 75.58819,
+        },
+        control: Vector2 {
+            x: 54.5726,
+            y: 75.58819,
+        },
+        to: Vector2 {
+            x: 112.56276,
+            y: 82.80722,
+        },
     };
     let point = Vector2 { x: 120.0, y: 72.0 };
     let sd = curve.calculate_sd(point);
