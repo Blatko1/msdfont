@@ -2,12 +2,11 @@ mod math;
 mod shape;
 
 use cgmath::Vector2;
-use image::{DynamicImage, GenericImage, Rgba};
 use rusttype::{Font, Point, Scale};
 
 use crate::{
     math::SignedDistance,
-    shape::{Quad, Segment, ShapeBuilder},
+    shape::{Segment, ShapeBuilder},
 };
 
 fn main() {
@@ -35,7 +34,6 @@ fn main() {
     let width = bb.width() as u32;
     let height = bb.height() as u32;
 
-    let mut image = DynamicImage::new_rgba8(width + offset, height + offset);
 
     for y in 0..height + offset {
         for x in 0..width + offset {
@@ -60,12 +58,6 @@ fn main() {
                     }
                 }
             }
-            /*let curve = Quad {
-                from: Vector2 { x: 100.5726, y: 10.58819 },
-                control: Vector2 { x: 10.5726, y: 75.58819 },
-                to: Vector2 { x: 160.56276, y: 160.80722 },
-            };
-            sgn_distance = curve.calculate_sd(point);*/
 
             // Pixel color
             const MAX_DIST: f32 = 6.0;
@@ -80,8 +72,6 @@ fn main() {
 
             let sdf = (extended_d * 255.0) as u8;
 
-            image.put_pixel(x, y, Rgba([sdf, sdf, sdf, 255]));
         }
     }
-    image.save("output/test.png").unwrap();
 }
