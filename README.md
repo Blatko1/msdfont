@@ -9,6 +9,12 @@ Later **MSDF** and **MTSDF** will be implemented.
 
 This project wouldn't exist without *Chlumskys* **[msdfgen](https://github.com/Chlumsky/msdfgen)** and other Rust libraries which implement his algorithm.
 
+## TODO
+
+- [ ] Fix *Overlapping Contours* Correction
+- **...more to be added...**
+- [ ] Construct a complete user-friendly library
+
 ## Features
 
 * SDF, pseudo-SDF generation for fonts
