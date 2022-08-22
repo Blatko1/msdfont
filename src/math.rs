@@ -1,9 +1,24 @@
-use std::{f32::consts::PI, ops::Neg};
+use std::f32::consts::PI;
 
-use crate::shape::{Line, Quad};
-use cgmath::{InnerSpace, Vector2, Zero};
+use crate::shape::{Line, Quad, Winding};
+use crate::vector::Vector2;
 
-#[derive(Debug, PartialEq)]
+// TODO create struct which holds distance to segments used for
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct ContourSignedDistance {
+    pub distance: SignedDistance,
+    pub contour_winding: Winding,
+}
+
+// TODO check if needed
+//impl PartialOrd for ContourSignedDistance {
+//    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+//        self.distance.partial_cmp(&other.distance)
+//    }
+//}
+
+/// Distance from pixel to contour
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct SignedDistance {
     pub extended_dist: f32,
     pub real_dist: f32,
@@ -37,7 +52,7 @@ impl PartialOrd for SignedDistance {
     }
 }
 
-pub fn signed_distance_from_line(line: Line, point: Vector2<f32>) -> SignedDistance {
+pub fn signed_distance_from_line(line: Line, point: Vector2) -> SignedDistance {
     let p0 = line.from;
     let p1 = line.to;
     let p = point;
@@ -66,7 +81,7 @@ pub fn signed_distance_from_line(line: Line, point: Vector2<f32>) -> SignedDista
     let ortho: f32 = if p_bezier.is_zero() {
         0.0
     } else {
-        p1_p0.normalize().perp_dot(p_bezier.normalize())
+        p1_p0.normalize().cross(p_bezier.normalize())
     };
     let sign = ortho.signum();
     let orthogonality = ortho.abs();
@@ -79,16 +94,18 @@ pub fn signed_distance_from_line(line: Line, point: Vector2<f32>) -> SignedDista
     }
 }
 
-pub fn signed_distance_from_quad(quad: Quad, point: Vector2<f32>) -> SignedDistance {
+pub fn signed_distance_from_quad(quad: Quad, point: Vector2) -> SignedDistance {
     let p0 = quad.from;
-    let p1 = quad.control;
+    let p1 = quad.ctrl;
     let p2 = quad.to;
     let p = point;
 
     let v = p - p0;
     let v1 = p1 - p0;
     let v2 = p2 - 2.0 * p1 + p0;
-    // quadratic Bezier curve: (v2 · v2)t^3 + 3(v1 · v2)t^2 + (2*v1 · v1 − v2 · v)t − v1 · v = 0
+    // quadratic Bezier curve:
+    // (v2 · v2)t^3 + 3(v1 · v2)t^2 + (2*v1 · v1 − v2 · v)t − v1 · v = 0
+    // general quadratic:
     // a * t^3 + b * t^2 + c * t + d = 0
 
     let a = v2.dot(v2);
@@ -105,20 +122,20 @@ pub fn signed_distance_from_quad(quad: Quad, point: Vector2<f32>) -> SignedDista
     let mut smallest_dist2 = f32::MAX; // Not square rooted
 
     // Compare all roots to find the closest "t" and smallest distance.
-    for r in roots.iter().flatten() { // <-- automatically filters out Options with None   
-        // Use clamped root in quadratic function.
-            let t = r.clamp(0.0, 1.0);
-            let bezier = t * t * v2 + 2.0 * t * v1 + p0;
+    for r in roots.iter().flatten() {
+        // <-- automatically filters out Options with None
+        // Use clamped root in the quadratic function.
+        let t = r.clamp(0.0, 1.0);
+        let bezier = t * t * v2 + 2.0 * t * v1 + p0;
 
-            // Then compare the distances for each root.
-            let dist2 = (bezier - p).magnitude2();
-            if dist2 < smallest_dist2 {
-                extended_pos = *r;
-                real_pos = t;
-                closest_bezier = bezier;
-                smallest_dist2 = dist2;
-            }
-        
+        // Then compare the distances for each root.
+        let dist2 = (bezier - p).magnitude2();
+        if dist2 < smallest_dist2 {
+            extended_pos = *r;
+            real_pos = t;
+            closest_bezier = bezier;
+            smallest_dist2 = dist2;
+        }
     }
 
     // Get the distance from current pixel "p" to bezier line.
@@ -133,7 +150,7 @@ pub fn signed_distance_from_quad(quad: Quad, point: Vector2<f32>) -> SignedDista
     let ortho: f32 = if p_bezier.is_zero() || dir.is_zero() {
         0.0
     } else {
-        dir.normalize().perp_dot(p_bezier.normalize())
+        dir.normalize().cross(p_bezier.normalize())
     };
     let sign = ortho.signum();
     let orthogonality = ortho.abs();
@@ -185,8 +202,8 @@ fn find_cubic_roots(a: f32, b: f32, c: f32, d: f32) -> [Option<f32>; 3] {
     let c = c / a;
     let d = d / a;
 
-    let q = (b * b - 3.0 * c) / 9.0;    // TODO explain why we negate numerator
-    let r = (b * 2.0 * b * b - 9.0 * c * b + 27.0 * d) / 54.0;
+    let q = (b * b - 3.0 * c) / 9.0; // TODO explain why we negate numerator
+    let r = (2.0 * b * b * b + 27.0 * d - 9.0 * c * b) / 54.0;
 
     let qqq = q * q * q;
     let rr = r * r;
@@ -201,21 +218,40 @@ fn find_cubic_roots(a: f32, b: f32, c: f32, d: f32) -> [Option<f32>; 3] {
 
         [Some(x1), None, None]
     } else {
-    // D <= 0.0, q < 0.0
-    // root1 = (2 * sqrt(-q)) * cos(theta/3) - (third * b);
-    // root2 = (2 * sqrt(-q)) * cos((theta + 2*pi)/3) - (third * b);
-    // root3 = (2 * sqrt(-q)) * cos((theta + 4*pi)/3) - (third * b);
-    // root = m * cos((theta + ...)/3) - n;
-    let q_sqrt = q.sqrt();
-    let two_pi = 2.0 * PI;
-    let theta = (r / q_sqrt.powi(3)).acos();
-    let m = -2.0 * q_sqrt;
-    let x1 = m * (theta * third).cos() - b;
-    let x2 = m * ((theta + two_pi) * third).cos() - b;
-    let x3 = m * ((theta - two_pi) * third).cos() - b;
+        // D <= 0.0, q < 0.0
+        // root1 = (2 * sqrt(-q)) * cos(theta/3) - (third * b);
+        // root2 = (2 * sqrt(-q)) * cos((theta + 2*pi)/3) - (third * b);
+        // root3 = (2 * sqrt(-q)) * cos((theta + 4*pi)/3) - (third * b);
+        // root = m * cos((theta + ...)/3) - n;
+        let q_sqrt = q.sqrt();
+        let two_pi = 2.0 * PI;
+        let theta = (r / q_sqrt.powi(3)).acos();
+        let m = -2.0 * q_sqrt;
+        let x1 = m * (theta * third).cos() - b;
+        let x2 = m * ((theta + two_pi) * third).cos() - b;
+        let x3 = m * ((theta - two_pi) * third).cos() - b;
 
-    [Some(x1), Some(x2), Some(x3)]
+        [Some(x1), Some(x2), Some(x3)]
     }
+}
+
+/// A line function.
+/// - `p0` - line starting point
+/// - `p1` - line ending point
+/// - `t` - function parameter
+#[inline]
+pub fn line_fn(p0: Vector2, p1: Vector2, t: f32) -> Vector2 {
+    p0 + t * (p1 - p0)
+}
+
+/// A line function.
+/// - `p0` - curve starting point
+/// - `p1` - curve control point
+/// - `p2` - curve ending point
+/// - `t` - function parameter
+#[inline]
+pub fn quadratic_fn(p0: Vector2, p1: Vector2, p2: Vector2, t: f32) -> Vector2 {
+    p0 + 2.0 * t * (p1 - p0) + t * t * (p2 - 2.0 * p1 + p0)
 }
 
 #[test]
@@ -234,18 +270,6 @@ fn cubic_root_test() {
 #[test]
 fn cubic_root_test2() {
     let a = 1.0;
-    let b = -10.0;
-    let c = 1000.0;
-    let d = -2.0;
-    let (roots, discriminant, q, r) = test_find_cubic_roots(a, b, c, d);
-
-    assert!(q > 0.0);
-    assert!(discriminant > 0.0);
-}
-
-#[test]
-fn cubic_root_test3() {
-    let a = 1.0;
     let b = -1.0;
     let c = -1.6;
     let d = 2.5;
@@ -260,7 +284,6 @@ fn test_find_cubic_roots(
     _c: f32,
     _d: f32,
 ) -> (Vec<f32>, f32, f32, f32) {
-
     let b = _b / _a;
     let c = _c / _a;
     let d = _d / _a;
