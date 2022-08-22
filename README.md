@@ -11,7 +11,12 @@ This project wouldn't exist without *Chlumskys* **[msdfgen](https://github.com/C
 
 ## TODO
 
-- [ ] Fix *Overlapping Contours* Correction
+- [ ] Fix: *Overlapping Contours* Correction
+- [ ] Add support for **Cubic Bézier Curves**
+- [ ] Implement MSDF generation for fonts
+- [ ] Implement MTSDF generation for fonts
+- [ ] Add more showcase items
+- [ ] Add a proper example
 - **...more to be added...**
 - [ ] Construct a complete user-friendly library
 
