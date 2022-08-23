@@ -3,6 +3,7 @@ mod gen;
 mod math;
 mod shape;
 mod vector;
+mod overlaps;
 
 use image::{DynamicImage, GenericImage, Rgba};
 use rusttype::{Font, Point, Scale};
@@ -158,5 +159,5 @@ fn main_test() {
             image.put_pixel(x, y, Rgba([sdf, sdf, sdf, 255]));
         }
     }
-    image.save("examples/out/test.png").unwrap();
+    image.save("examples/test.png").unwrap();
 }

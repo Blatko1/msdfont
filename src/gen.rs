@@ -46,7 +46,7 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
     // Distances from pixel to each contour with contours winding.
     let contour_distances = shape
         .iter()
-        .map(|contour| contour.get_distance_from(pixel))
+        .map(|contour| contour.get_distance(pixel))
         .collect::<Vec<_>>();
 
     let closest_contour_dist = contour_distances
@@ -71,7 +71,11 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
     //     return shortest_dist;
     // }
 
-    // IMPORTANT: clockwise contours have advantage over 
+    // TODO IMPORTANT then check if shortest distance's contour has any intersections
+
+    // cw - clockwise
+    // ccw - counter clockwise
+    // IMPORTANT: clockwise contours have advantage over
     // counter clockwise contours if they overlap
 
     // 1) Check if correction is NOT needed:
@@ -92,11 +96,11 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
     // - if { the closest contour is clockwise} return distance to it,
     // - else if { the closest contour is counter clockwise } return shortest distance.
 
-    // Get all contours surrounding current pixel. This can be easily achieved 
-    // by checking: 
+    // Get all contours surrounding current pixel. This can be easily achieved
+    // by checking:
     // - if distance from contour is positive and contour is clockwise then the
-    // contour is surrounding the pixel; 
-    // - else if distance from contour is negative and contour is counter clockwise then 
+    // contour is surrounding the pixel;
+    // - else if distance from contour is negative and contour is counter clockwise then
     // the contour is surrounding the pixel
     let mut surrounding_contours = contour_distances
         .iter()
@@ -118,40 +122,79 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
     println!("Sorted Vec: \n {:?}", surrounding_contours);
 
     let closest_surrounding_contour = surrounding_contours.first().unwrap();
+    let cw_surrounding_contours = surrounding_contours
+        .iter()
+        .filter(|dist| dist.contour_winding.is_cw())
+        .collect::<Vec<_>>();
+    let ccw_surrounding_contours = surrounding_contours
+        .iter()
+        .filter(|dist| dist.contour_winding.is_ccw())
+        .collect::<Vec<_>>();
 
-    // If pixel's distance is positive return the shortest distance, unless 
+    let has_cw_surrounding_contours = !cw_surrounding_contours.is_empty();
+    // If pixel is not surrounded by any clockwise contours then it should be negative.
+    if cw_surrounding_contours.is_empty() {
+        return closest_surrounding_contour.distance;
+    }
+
+    // TODO FIX DOC
+    // If pixel's distance is positive and  return the shortest distance, unless
     // there is a second closest clockwise contour surrounding it in which case
     // it's distance should be returned.
     // This is important because if two clockwise contours overlap (letter "Đ")
-    // some pixels would return the distance to the edge inside the other contour 
+    // some pixels would return the distance to the edge inside the other contour
     // which give result where contour outlines are visible inside the overlap.
-    if shortest_dist.sign.is_sign_positive() {
-        if let Some(second) = surrounding_contours.get(1) {
-            if second.contour_winding.is_cw() {
-                return second.distance;
-            }
-        }
-        return shortest_dist;
-    }
 
-    // Now it is guaranteed that the shortest distance is negative.
-    assert!(shortest_dist.sign.is_sign_negative());
-    
+    // TODO test if not needed
+    //if shortest_dist.sign.is_sign_positive() {
+    //    // Needed because if two ccw contours overlap.
+    //    // If there is no clockwise surrounding contour, maybe it should
+    //    if closest_contour_dist.contour_winding.is_cw() {
+    //        // TODO Should be the furthest clockwise contour with no counter clockwise contours in between
+    //        if let Some(second) = surrounding_contours.get(1) {
+    //            if second.contour_winding.is_cw() {
+    //                return second.distance;
+    //            }
+    //        }
+    //        return shortest_dist;
+    //    }
+    //}
+
+    // Now it is guaranteed that the shortest distance is negative and should be positive or is positive
+    // and should be negative.
+    // assert!(shortest_dist.sign.is_sign_negative());
+
+    // If the closest surrounding contour is clockwise then the distance 
+    // should always be positive. TODO check if positive with assert
+    // If it is surrounded by at least one then proceed with the checks.
     if closest_surrounding_contour.contour_winding.is_cw() {
+        if shortest_dist.sign.is_sign_positive() {
+            // TODO Should be the furthest clockwise contour with no counter clockwise contours in between
+            if let Some(second) = surrounding_contours.get(1) {
+                if second.contour_winding.is_cw() {
+                    return second.distance;
+                }
+            }
+            return shortest_dist;
+        }
         return closest_surrounding_contour.distance;
     } else {
+        // Pixel is either surrounded by a counter clockwise contour or is also surrounded
+        // by an clockwise contour which intersects counter clockwise one.
+        // TODO add an overlap check
         let closest_ccw = closest_surrounding_contour;
-        let closest_intersecting_cw = surrounding_contours
+        let closest_intersecting_cw = cw_surrounding_contours
             .iter()
-            .filter(|dist| dist.contour_winding.is_cw())
             .reduce(|accum, item| {
                 if accum.distance < item.distance {
                     accum
                 } else {
                     item
                 }
-            })
-            .unwrap();
+            });
+        //if let Some(intersecting) = closest_intersecting_cw {
+        //    return intersecting.distance;
+        //}
         return shortest_dist;
     }
 

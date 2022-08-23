@@ -2,17 +2,33 @@ use rusttype::OutlineBuilder;
 use std::slice::Iter;
 
 use crate::math::{ContourSignedDistance, SignedDistance};
+use crate::overlaps::Intersectable;
 use crate::vector::Vector2;
 
 #[derive(Debug)]
 pub struct Shape {
     contours: Vec<Contour>,
+    overlaps: Option<ContourOverlaps>,
 }
 
 impl Shape {
     /// Iterates over shape contours.
+    #[inline]
     pub fn iter(&self) -> Iter<'_, Contour> {
         self.contours.iter()
+    }
+
+    pub fn find_overlaps(&mut self) {
+        let len = self.contours.len();
+        // TODO explain
+        // Compare each contour with another avoiding duplicate comparisons.
+        for (index, contour) in (&self.contours[0..len-1]).iter().enumerate() {
+            for other in self.contours.iter().skip(index + 1) {
+                if contour.overlaps(other) {
+                    todo!()
+                }
+            }
+        }
     }
 }
 
@@ -23,14 +39,12 @@ pub struct Contour {
 }
 
 impl Contour {
-    pub fn get_distance_from(&self, point: Vector2) -> ContourSignedDistance {
+    /// Returns the shortest distance from the provided point to the contour.
+    pub fn get_distance(&self, point: Vector2) -> ContourSignedDistance {
         let mut shortest_dist = SignedDistance::MAX;
+        // TODO maybe use iter
         for segment in &self.segments {
-            let dist = match segment {
-                Segment::Line(line) => line.calculate_distance(point),
-                Segment::Quadratic(quad) => quad.calculate_distance(point),
-                Segment::Cubic(curve) => unimplemented!("Not yet!!!"),
-            };
+            let dist = segment.distance(point);
 
             // To learn more about the comparison go to `SignedDistance::partial_cmp`
             if dist < shortest_dist {
@@ -43,9 +57,29 @@ impl Contour {
         }
     }
 
+    pub fn overlaps(&self, other: &Self) -> bool {
+        let len = self.segments.len();
+        // TODO explain
+        // Compare each segment with another avoiding duplicate comparisons.
+        // If an intersection is found immediately return `true`.
+        for (index, segment) in (&self.segments[0..len-1]).iter().enumerate() {
+            for other in self.segments.iter().skip(index + 1) {
+                if segment.intersects_with(other) {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
     pub fn winding(&self) -> Winding {
         self.winding
     }
+}
+
+#[derive(Debug)]
+pub struct ContourOverlaps {
+
 }
 
 #[derive(Debug)]
@@ -53,6 +87,24 @@ pub enum Segment {
     Line(Line),
     Quadratic(Quad),
     Cubic(Curve),
+}
+
+impl Segment {
+    fn distance(&self, point: Vector2) -> SignedDistance {
+        match self {
+            Segment::Line(line) => line.calculate_distance(point),
+            Segment::Quadratic(quad) => quad.calculate_distance(point),
+            Segment::Cubic(curve) => todo!(),
+        }
+    }
+
+    fn intersects_with(&self, other: &Self) -> bool {
+        match self {
+            Segment::Line(line) => line.intersects_with(other),
+            Segment::Quadratic(quad) => quad.intersects_with(other),
+            Segment::Cubic(curve) => curve.intersects_with(other),
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -156,6 +208,7 @@ impl ShapeBuilder {
     pub fn build(self) -> Shape {
         Shape {
             contours: self.contours,
+            overlaps: None,
         }
     }
 
@@ -239,28 +292,6 @@ impl OutlineBuilder for ShapeBuilder {
     }
 }
 
-#[test]
-fn quad_curve_test() {
-    let curve = Quad {
-        from: Vector2 {
-            x: 114.5726,
-            y: 75.58819,
-        },
-        ctrl: Vector2 {
-            x: 54.5726,
-            y: 75.58819,
-        },
-        to: Vector2 {
-            x: 112.56276,
-            y: 82.80722,
-        },
-    };
-    let point = Vector2 { x: 120.0, y: 72.0 };
-    let sd = curve.calculate_distance(point);
-
-    println!("sd: {:?}", sd);
-}
-
 /// Used to determine if contour is additive or subtractive.
 ///
 /// In other words, if the winding is set to `true`, contour
@@ -285,3 +316,5 @@ impl Winding {
         !self.is_cw()
     }
 }
+
+// TODO maybe add tests for each module
