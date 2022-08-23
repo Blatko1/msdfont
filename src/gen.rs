@@ -66,11 +66,19 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
 
     // ______________Overlapping contours correction________________
 
+    // // // // FIRST CHECK IF THERE ARE ANY INTERSECTIONS // // // //
+    // if !intersecting() {
+    //     return shortest_dist;
+    // }
+
+    // IMPORTANT: clockwise contours have advantage over 
+    // counter clockwise contours if they overlap
+
     // 1) Check if correction is NOT needed:
     // a) Check if should be filled by default (pixel's closest distance is positive):
-    if shortest_dist.sign.is_sign_positive() {
-        return shortest_dist;
-    }
+    //if shortest_dist.sign.is_sign_positive() {
+    //    return shortest_dist;
+    //}
     // b) Check if pixel is closest to the surrounding counter clockwise contour:
     //if shortest_dist.sign.is_sign_negative() && closest_winding.is_ccw() {
     //    return shortest_dist;
@@ -84,10 +92,12 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
     // - if { the closest contour is clockwise} return distance to it,
     // - else if { the closest contour is counter clockwise } return shortest distance.
 
-    // TODO if pixel in closest to surrounding clockwise contour check if there is 
-    // second close clockwise contour surrounding it.
-
-    // Get all contours surrounding current pixel.
+    // Get all contours surrounding current pixel. This can be easily achieved 
+    // by checking: 
+    // - if distance from contour is positive and contour is clockwise then the
+    // contour is surrounding the pixel; 
+    // - else if distance from contour is negative and contour is counter clockwise then 
+    // the contour is surrounding the pixel
     let mut surrounding_contours = contour_distances
         .iter()
         .filter(|dist| {
@@ -97,7 +107,7 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
         })
         .collect::<Vec<_>>();
 
-    // If there are no surrounding contours return the closest one.
+    // If there are no surrounding contours return the distance to closest one.
     if surrounding_contours.is_empty() {
         return shortest_dist;
     }
@@ -109,20 +119,39 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
 
     let closest_surrounding_contour = surrounding_contours.first().unwrap();
 
+    // If pixel's distance is positive return the shortest distance, unless 
+    // there is a second closest clockwise contour surrounding it in which case
+    // it's distance should be returned.
+    // This is important because if two clockwise contours overlap (letter "Đ")
+    // some pixels would return the distance to the edge inside the other contour 
+    // which give result where contour outlines are visible inside the overlap.
+    if shortest_dist.sign.is_sign_positive() {
+        if let Some(second) = surrounding_contours.get(1) {
+            if second.contour_winding.is_cw() {
+                return second.distance;
+            }
+        }
+        return shortest_dist;
+    }
+
+    // Now it is guaranteed that the shortest distance is negative.
+    assert!(shortest_dist.sign.is_sign_negative());
+    
     if closest_surrounding_contour.contour_winding.is_cw() {
         return closest_surrounding_contour.distance;
     } else {
-        let closest_cw_surrounding_intersecting_contour = surrounding_contours
-        .iter()
-        .filter(|dist| dist.contour_winding.is_cw())
-        .reduce(|accum, item| {
-            if accum.distance < item.distance {
-                accum
-            } else {
-                item
-            }
-        })
-        .unwrap();
+        let closest_ccw = closest_surrounding_contour;
+        let closest_intersecting_cw = surrounding_contours
+            .iter()
+            .filter(|dist| dist.contour_winding.is_cw())
+            .reduce(|accum, item| {
+                if accum.distance < item.distance {
+                    accum
+                } else {
+                    item
+                }
+            })
+            .unwrap();
         return shortest_dist;
     }
 

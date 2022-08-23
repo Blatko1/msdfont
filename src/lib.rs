@@ -107,10 +107,10 @@ fn main_test() {
     let data = include_bytes!("../examples/fonts/monserat.ttf");
     let font = Font::try_from_bytes(data).unwrap();
 
-    let scale = Scale::uniform(100.0);
+    let scale = Scale::uniform(300.0);
     let offset = 0;
 
-    let char = 'š';
+    let char = 'Đ';
 
     let glyph = font.glyph(char).scaled(scale).positioned(Point {
         x: offset as f32 / 2.0,
