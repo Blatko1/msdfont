@@ -1,5 +1,8 @@
 # **msdfont-rs**
 
+[![Build Status](https://img.shields.io/github/workflow/status/Blatko1/msdfont-rs/Rust?logo=github)](https://github.com/Blatko1/msdfont-rs/actions)
+[![Licence](https://img.shields.io/github/license/Blatko1/msdfont-rs?color=%23537aed)](https://github.com/Blatko1/msdfont-rs/blob/master/LICENSE)
+
 * **WIP**
 
 **Multi-channel signed distance field** (MSDF) generator for fonts implemented in pure Rust.
