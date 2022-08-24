@@ -114,7 +114,7 @@ pub fn signed_distance_from_quad(quad: Quad, point: Vector2) -> SignedDistance {
     let d = -v1.dot(v);
 
     // Get roots:
-    let roots = find_cubic_roots(a, b, c, d);
+    let roots = cubic_roots(a, b, c, d);
 
     let mut extended_pos = 0.0;
     let mut real_pos = 0.0;
@@ -163,7 +163,7 @@ pub fn signed_distance_from_quad(quad: Quad, point: Vector2) -> SignedDistance {
     }
 }
 
-fn find_quadratic_roots(a: f32, b: f32, c: f32) -> [Option<f32>; 2] {
+fn quadratic_roots(a: f32, b: f32, c: f32) -> [Option<f32>; 2] {
     let discriminant = b * b - 4.0 * a * c;
 
     if a == 0.0 {
@@ -190,9 +190,9 @@ fn find_quadratic_roots(a: f32, b: f32, c: f32) -> [Option<f32>; 2] {
     }
 }
 
-fn find_cubic_roots(a: f32, b: f32, c: f32, d: f32) -> [Option<f32>; 3] {
+fn cubic_roots(a: f32, b: f32, c: f32, d: f32) -> [Option<f32>; 3] {
     if a == 0.0 {
-        let roots = find_quadratic_roots(b, c, d);
+        let roots = quadratic_roots(b, c, d);
         return [roots[0], roots[1], None];
     }
 
@@ -235,7 +235,7 @@ fn find_cubic_roots(a: f32, b: f32, c: f32, d: f32) -> [Option<f32>; 3] {
     }
 }
 
-/// Takes four points as input where **p1-p2** create first line and **p3-p4** create 
+/// Takes four points as input where **p0-p1** create first line and **p2-p3** create 
 /// second line. If they intersect the function returns `true` and if they don't
 /// `false` is returned.
 /// 
@@ -244,18 +244,18 @@ fn find_cubic_roots(a: f32, b: f32, c: f32, d: f32) -> [Option<f32>; 3] {
 /// 
 /// Procedure explained at: 
 /// https://web.archive.org/web/20121001232059/http://paulbourke.net/geometry/lineline2d/
-pub fn lines_intersect(p1: Vector2, p2: Vector2, p3: Vector2, p4: Vector2) -> bool {
+pub fn lines_intersect(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2) -> bool {
     // TODO adapt this function with in mind that intersections will rarely happen
-    let x1_x3 = p1.x - p3.x;
-    let y1_y3 = p1.y - p3.y;
-    let x2_x1 = p2.x - p1.x;
-    let y2_y1 = p2.y - p1.y;
-    let x4_x3 = p4.x - p3.x;
-    let y4_y3 = p4.y - p3.y;
+    let x0_x2 = p0.x - p2.x;
+    let y0_y2 = p0.y - p2.y;
+    let x1_x0 = p1.x - p0.x;
+    let y1_y0 = p1.y - p0.y;
+    let x3_x2 = p3.x - p2.x;
+    let y3_y2 = p3.y - p2.y;
 
-    let numerator1 = (x4_x3 * y1_y3) - (y4_y3 * x1_x3);
-    let numerator2 = (x2_x1 * y1_y3) - (y2_y1 * x1_x3);
-    let denominator = (y4_y3 * x2_x1) - (x4_x3 * y2_y1);
+    let numerator1 = (x3_x2 * y0_y2) - (y3_y2 * x0_x2);
+    let numerator2 = (x1_x0 * y0_y2) - (y1_y0 * x0_x2);
+    let denominator = (y3_y2 * x1_x0) - (x3_x2 * y1_y0);
 
     // Even tho lines are touching when they are coincident or are on the 
     // same line, this function will not record it as a intersection.
@@ -279,6 +279,33 @@ pub fn lines_intersect(p1: Vector2, p2: Vector2, p3: Vector2, p4: Vector2) -> bo
     false
 }
 
+// TODO exclain and improve and simplify
+/// Sources: 
+/// https://www.particleincell.com/2013/cubic-line-intersection/
+/// https://stackoverflow.com/questions/50129580/program-to-find-line-segment-and-bezier-curve-intersection
+pub fn line_quad_intersect(q0: Vector2, q1: Vector2, q2: Vector2, l0: Vector2, l1: Vector2) -> bool {
+    let a = (q0 + q2 - 2.0 * q1).cross(l1 - l0);
+    let b = 2.0 * (q1 - q0).cross(l1 - l0);
+    let c = (q0 - l0).cross(l1 - l0);
+
+    let quad_roots = quadratic_roots(a, b, c);
+
+    for root in quad_roots {
+        if let Some(root) = root {
+            if root >= 0.0 && root <= 1.0 {
+                let quad_p = quadratic_fn(q0, q1, q2, root);
+                let line_p = (quad_p - l0) / (l1 - l0);
+
+                println!("line: {:?}", line_p);
+            }
+        }
+    }
+
+    println!("roots: {:?}", quad_roots);
+
+    false
+}
+
 /// A line function.
 /// - `p0` - line starting point
 /// - `p1` - line ending point
@@ -296,6 +323,17 @@ pub fn line_fn(p0: Vector2, p1: Vector2, t: f32) -> Vector2 {
 #[inline]
 pub fn quadratic_fn(p0: Vector2, p1: Vector2, p2: Vector2, t: f32) -> Vector2 {
     p0 + 2.0 * t * (p1 - p0) + t * t * (p2 - 2.0 * p1 + p0)
+}
+
+#[test]
+fn line_quad_intersection_test() {
+    let l1 = Vector2::new(1.0, 1.0);
+    let l2 = Vector2::new(10.0, 10.0);
+    let q1 = Vector2::new(1.0, 1.0);
+    let q2_ctrl = Vector2::new(3.0, 8.0);
+    let q3 = Vector2::new(11.0, 11.0);
+
+    line_quad_intersect(q1, q2_ctrl, q3, l1, l2);
 }
 
 #[test]

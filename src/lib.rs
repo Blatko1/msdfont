@@ -103,7 +103,7 @@ impl<'a> Msdfont<'a> {
     }*/
 }
 
-#[test]
+//#[test]
 fn main_test() {
     let data = include_bytes!("../examples/fonts/monserat.ttf");
     let font = Font::try_from_bytes(data).unwrap();
