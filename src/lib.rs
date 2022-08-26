@@ -1,9 +1,9 @@
 mod font;
 mod gen;
 mod math;
+mod overlaps;
 mod shape;
 mod vector;
-mod overlaps;
 
 use image::{DynamicImage, GenericImage, Rgba};
 use rusttype::{Font, Point, Scale};
@@ -103,7 +103,7 @@ impl<'a> Msdfont<'a> {
     }*/
 }
 
-//#[test]
+#[test]
 fn main_test() {
     let data = include_bytes!("../examples/fonts/monserat.ttf");
     let font = Font::try_from_bytes(data).unwrap();
@@ -121,7 +121,7 @@ fn main_test() {
     let bb = glyph.pixel_bounding_box().unwrap();
     let pos = glyph.position();
 
-    let mut builder = ShapeBuilder::new((pos.x, pos.y));
+    let mut builder = ShapeBuilder::new(Vector2::new(pos.x, pos.y));
 
     glyph.build_outline(&mut builder);
 

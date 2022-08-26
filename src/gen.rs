@@ -61,7 +61,7 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
         .unwrap();
 
     let shortest_dist = closest_contour_dist.distance;
-    println!("closest: {:?}", shortest_dist);
+    //println!("closest: {:?}", shortest_dist);
     let closest_winding = closest_contour_dist.contour_winding;
 
     // ______________Overlapping contours correction________________
@@ -119,7 +119,7 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
     // Sort all contours by their distance to pixel from closest to furthest.
     surrounding_contours
         .sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap());
-    println!("Sorted Vec: \n {:?}", surrounding_contours);
+    //println!("Sorted Vec: \n {:?}", surrounding_contours);
 
     let closest_surrounding_contour = surrounding_contours.first().unwrap();
     let cw_surrounding_contours = surrounding_contours
@@ -164,7 +164,7 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
     // and should be negative.
     // assert!(shortest_dist.sign.is_sign_negative());
 
-    // If the closest surrounding contour is clockwise then the distance 
+    // If the closest surrounding contour is clockwise then the distance
     // should always be positive. TODO check if positive with assert
     // If it is surrounded by at least one then proceed with the checks.
     if closest_surrounding_contour.contour_winding.is_cw() {
@@ -183,9 +183,8 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
         // by an clockwise contour which intersects counter clockwise one.
         // TODO add an overlap check
         let closest_ccw = closest_surrounding_contour;
-        let closest_intersecting_cw = cw_surrounding_contours
-            .iter()
-            .reduce(|accum, item| {
+        let closest_intersecting_cw =
+            cw_surrounding_contours.iter().reduce(|accum, item| {
                 if accum.distance < item.distance {
                     accum
                 } else {

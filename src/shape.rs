@@ -2,13 +2,13 @@ use rusttype::OutlineBuilder;
 use std::slice::Iter;
 
 use crate::math::{ContourSignedDistance, SignedDistance};
-use crate::overlaps::Intersectable;
+use crate::overlaps::{OverlapData};
 use crate::vector::Vector2;
 
 #[derive(Debug)]
 pub struct Shape {
     contours: Vec<Contour>,
-    overlaps: Option<ContourOverlaps>,
+    overlaps: Option<OverlapData>,
 }
 
 impl Shape {
@@ -17,23 +17,15 @@ impl Shape {
     pub fn iter(&self) -> Iter<'_, Contour> {
         self.contours.iter()
     }
-
-    pub fn find_overlaps(&mut self) {
-        let len = self.contours.len();
-        // TODO explain
-        // Compare each contour with another avoiding duplicate comparisons.
-        for (index, contour) in (&self.contours[0..len-1]).iter().enumerate() {
-            for other in self.contours.iter().skip(index + 1) {
-                if contour.overlaps(other) {
-                    todo!()
-                }
-            }
-        }
-    }
 }
+
+// TODO implement Form<> Into<> and some functions
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ContourID (u16);
 
 #[derive(Debug)]
 pub struct Contour {
+    id: ContourID,
     segments: Vec<Segment>,
     winding: Winding,
 }
@@ -57,29 +49,17 @@ impl Contour {
         }
     }
 
-    pub fn overlaps(&self, other: &Self) -> bool {
-        let len = self.segments.len();
-        // TODO explain
-        // Compare each segment with another avoiding duplicate comparisons.
-        // If an intersection is found immediately return `true`.
-        for (index, segment) in (&self.segments[0..len-1]).iter().enumerate() {
-            for other in self.segments.iter().skip(index + 1) {
-                if segment.intersects_with(other) {
-                    return true;
-                }
-            }
-        }
-        false
+    pub fn id(&self) -> ContourID {
+        self.id
+    }
+
+    pub fn iter(&self) -> Iter<'_, Segment> {
+        self.segments.iter()
     }
 
     pub fn winding(&self) -> Winding {
         self.winding
     }
-}
-
-#[derive(Debug)]
-pub struct ContourOverlaps {
-
 }
 
 #[derive(Debug)]
@@ -95,14 +75,6 @@ impl Segment {
             Segment::Line(line) => line.calculate_distance(point),
             Segment::Quadratic(quad) => quad.calculate_distance(point),
             Segment::Cubic(curve) => todo!(),
-        }
-    }
-
-    fn intersects_with(&self, other: &Self) -> bool {
-        match self {
-            Segment::Line(line) => line.intersects_with(other),
-            Segment::Quadratic(quad) => quad.intersects_with(other),
-            Segment::Cubic(curve) => curve.intersects_with(other),
         }
     }
 }
@@ -192,32 +164,121 @@ pub struct ShapeBuilder {
     contours: Vec<Contour>,
     last_point: Option<Vector2>,
     pos: Vector2,
-    contour_area: f32,
+    shoelace: f32,
 }
 
 impl ShapeBuilder {
-    pub fn new<P: Into<(f32, f32)>>(pos: P) -> Self {
+    // TODO add custom errors for the builder
+    pub fn new<P: Into<Vector2>>(pos: P) -> Self {
         Self {
             contours: Vec::new(),
             last_point: None,
-            pos: Vector2::from(pos.into()),
-            contour_area: 0.0,
+            pos: pos.into(),
+            shoelace: 0.0,
         }
     }
 
-    pub fn build(self) -> Shape {
-        Shape {
-            contours: self.contours,
-            overlaps: None,
-        }
-    }
-
-    #[inline]
-    fn add_shape(&mut self) {
+    pub fn start_at(&mut self, x: f32, y: f32) {
+        assert!(
+            self.last_point.is_none(),
+            "ShapeBuilder Error: The last contour has not been closed!"
+        );
+        let id = ContourID(self.contours.len() as u16);
+        // Open a new contour:
         self.contours.push(Contour {
+            id,
             segments: Vec::new(),
             winding: Winding(false),
         });
+
+        let to = Vector2::new(x + self.pos.x, y + self.pos.y);
+        self.last_point = Some(to);
+    }
+
+    pub fn line_to(&mut self, x: f32, y: f32) {
+        assert!(
+            self.last_point.is_some(),
+            "ShapeBuilder Error: Open a new contour before adding segments!"
+        );
+
+        let from = self.last_point.unwrap();
+        let to = Vector2::new(x + self.pos.x, y + self.pos.y);
+        let line = Line::new(from, to);
+
+        self.shoelace += line.shoelace();
+        self.add_segment(Segment::Line(line));
+        self.last_point = Some(to);
+    }
+
+    pub fn quad_to(&mut self, ctrl_x: f32, ctrl_y: f32, x: f32, y: f32) {
+        assert!(
+            self.last_point.is_some(),
+            "ShapeBuilder Error: Open a new contour before adding segments!"
+        );
+
+        let from = self.last_point.unwrap();
+        let control = Vector2::new(ctrl_x + self.pos.x, ctrl_y + self.pos.y);
+        let to = Vector2::new(x + self.pos.x, y + self.pos.y);
+        let quad = Quad::new(from, control, to);
+
+        self.shoelace += quad.shoelace();
+        self.add_segment(Segment::Quadratic(Quad::new(from, control, to)));
+        self.last_point = Some(to);
+    }
+
+    pub fn curve_to(
+        &mut self,
+        ctrl1_x: f32,
+        ctrl1_y: f32,
+        ctrl2_x: f32,
+        ctrl2_y: f32,
+        x: f32,
+        y: f32,
+    ) {
+        assert!(
+            self.last_point.is_some(),
+            "ShapeBuilder Error: Open a new contour before adding segments!"
+        );
+
+        let from = self.last_point.unwrap();
+        let ctrl1 = Vector2::new(ctrl1_x, ctrl1_y);
+        let ctrl2 = Vector2::new(ctrl2_x, ctrl2_y);
+        let to = Vector2::new(x + self.pos.x, y + self.pos.y);
+        let curve = Curve::new(from, ctrl1, ctrl2, to);
+
+        self.shoelace += curve.shoelace();
+        self.add_segment(Segment::Cubic(Curve::new(from, ctrl1, ctrl2, to)));
+        self.last_point = Some(to);
+        unimplemented!("Not implemented!!!")
+    }
+
+    pub fn close(&mut self) {
+        assert!(
+            !self.contours.is_empty(),
+            "ShapeBuilder Error: There are no contours to close!"
+        );
+        assert!(
+            self.last_point.is_some(),
+            "ShapeBuilder Error: The last contour has already been closed!"
+        );
+        let last = self.contours.last_mut().unwrap();
+        assert!(
+            !last.segments.is_empty(),
+            "ShapeBuilder Error: The current contour has no segments!"
+        );
+
+        last.winding = Winding(self.shoelace > 0.0);
+        self.shoelace = 0.0;
+        self.last_point = None;
+    }
+
+    pub fn build(self) -> Shape {
+        let overlaps = OverlapData::from_contours(&self.contours);
+        println!("overlaps: {:?}", overlaps);
+        Shape {
+            contours: self.contours,
+            overlaps,
+        }
     }
 
     #[inline]
@@ -228,67 +289,43 @@ impl ShapeBuilder {
 
 impl OutlineBuilder for ShapeBuilder {
     fn move_to(&mut self, x: f32, y: f32) {
-        println!("moving to: {} {}", x, y);
-        self.add_shape();
+        //println!("moving to: {} {}", x, y);
 
-        let to = Vector2::new(x + self.pos.x, y + self.pos.y);
-        self.last_point = Some(to);
+        self.start_at(x, y);
     }
 
     fn line_to(&mut self, x: f32, y: f32) {
-        println!("line to: {} {}", x, y);
-        let from = self.last_point.unwrap();
-        let to = Vector2::new(x + self.pos.x, y + self.pos.y);
-        let line = Line::new(from, to);
+        //println!("line to: {} {}", x, y);
 
-        self.contour_area += line.shoelace();
-        self.add_segment(Segment::Line(line));
-        self.last_point = Some(to);
+        self.line_to(x, y);
     }
 
     /// `x` and `y` represent the ending point and
     /// `x1` and `x2` represent the control point.
     fn quad_to(&mut self, x1: f32, y1: f32, x: f32, y: f32) {
-        println!(
-            "quadratic parabola: x1: {}, y1: {}, x: {}, y: {}",
-            x1, y1, x, y
-        );
-        let from = self.last_point.unwrap();
-        let control = Vector2::new(x1 + self.pos.x, y1 + self.pos.y);
-        let to = Vector2::new(x + self.pos.x, y + self.pos.y);
-        let quad = Quad::new(from, control, to);
+        //println!(
+        //    "quadratic parabola: x1: {}, y1: {}, x: {}, y: {}",
+        //    x1, y1, x, y
+        //);
 
-        self.contour_area += quad.shoelace();
-        self.add_segment(Segment::Quadratic(Quad::new(from, control, to)));
-        self.last_point = Some(to);
+        self.quad_to(x1, y1, x, y);
     }
 
     /// `x` and `y` represent the ending point and
-    /// `x1`, `x2`, `x1` and `x2` represent control points.
+    /// `x1`, `y1`, `x2` and `y2` represent control points.
     fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
-        println!(
-            "cubic parabola: x1: {}, y1: {}, x2: {}, y2: {} x: {}, y: {}",
-            x1, y1, x2, y2, x, y
-        );
-        let from = self.last_point.unwrap();
-        let ctrl1 = Vector2::new(x1, y1);
-        let ctrl2 = Vector2::new(x2, y2);
-        let to = Vector2::new(x + self.pos.x, y + self.pos.y);
-        let curve = Curve::new(from, ctrl1, ctrl2, to);
+        //println!(
+        //    "cubic parabola: x1: {}, y1: {}, x2: {}, y2: {} x: {}, y: {}",
+        //    x1, y1, x2, y2, x, y
+        //);
 
-        self.contour_area += curve.shoelace();
-        self.add_segment(Segment::Cubic(Curve::new(from, ctrl1, ctrl2, to)));
-        self.last_point = Some(to);
-        unimplemented!("Not implemented!!!")
+        self.curve_to(x1, y1, x2, y2, x, y)
     }
 
     fn close(&mut self) {
-        println!("_________END_________");
+        //println!("_________END_________");
 
-        let area = self.contour_area * 0.5;
-
-        self.contours.last_mut().unwrap().winding = Winding(area > 0.0);
-        self.contour_area = 0.0;
+        self.close();
     }
 }
 
