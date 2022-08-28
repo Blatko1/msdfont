@@ -1,4 +1,4 @@
-# **msdfont-rs**
+# **msdfont**
 
 [![Build Status](https://img.shields.io/github/workflow/status/Blatko1/msdfont-rs/Rust?logo=github)](https://github.com/Blatko1/msdfont-rs/actions)
 [![License](https://img.shields.io/github/license/Blatko1/msdfont-rs?color=%23537aed)](https://github.com/Blatko1/msdfont-rs/blob/master/LICENSE)
