@@ -1,7 +1,7 @@
 # **msdfont-rs**
 
 [![Build Status](https://img.shields.io/github/workflow/status/Blatko1/msdfont-rs/Rust?logo=github)](https://github.com/Blatko1/msdfont-rs/actions)
-[![Licence](https://img.shields.io/github/license/Blatko1/msdfont-rs?color=%23537aed)](https://github.com/Blatko1/msdfont-rs/blob/master/LICENSE)
+[![License](https://img.shields.io/github/license/Blatko1/msdfont-rs?color=%23537aed)](https://github.com/Blatko1/msdfont-rs/blob/master/LICENSE)
 
 * **WIP**
 
@@ -17,12 +17,13 @@ This project wouldn't exist without *Chlumskys* **[msdfgen](https://github.com/C
 * [ ] Fix: Simple *Overlapping Contours* Correction - *WIP*
 * [ ] Improve *Overlapping Contours* Correction to *perfection* - *WIP*
 * [ ] Add a tool for creating custom shapes - *WIP*
+* [ ] Add a function for checking intersections for quadratic and cubic functions
 * [ ] Add support for **Cubic Bézier Curves**
 * [ ] Implement MSDF generation for fonts
 * [ ] Implement MTSDF generation for fonts
 * [ ] Add more showcase items
 * [ ] Add a proper example
-* **...more coming...**
+* **...rest of TODOs is in code...**
 * [ ] Better organization of code
 * [ ] Construct a complete user-friendly library
 
