@@ -134,15 +134,16 @@ fn main_test() {
 
     for y in 0..height {
         for x in 0..width {
-            //let x = 60;
-            //let y = 68;
+            //let x = 76;
+            //let y = 67;
             let pixel = Vector2::new(x as f32 + 0.5, y as f32 + 0.5);
 
             let distance = gen::pixel_distance(&shape, pixel);
+            //println!("final: {:?}", distance);
             let signed_distance = distance.sign * distance.real_dist;
 
             // Pixel color
-            const MAX_DIST: f32 = 6.0;
+            const MAX_DIST: f32 = 12.0;
 
             // Used for normal SDF
             let normalized = (signed_distance / MAX_DIST as f32) + 0.5;

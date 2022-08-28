@@ -1,15 +1,15 @@
 use hashbrown::HashMap;
 
-use crate::shape::{Curve, Line, Quad, Segment, Contour, ContourID};
+use crate::shape::{Contour, ContourID, Curve, Line, Quad, Segment};
 
 #[derive(Debug)]
 pub struct OverlapData {
-    overlaps_map: HashMap<ContourID, Vec<ContourID>>
+    overlaps: HashMap<ContourID, Vec<ContourID>>,
 }
 
 impl OverlapData {
     // TODO find a way to improve efficiency
-    pub fn from_contours(contours: &Vec<Contour>) -> Option<Self> {
+    pub fn from_contours(contours: &Vec<Contour>) -> Self {
         let mut data = HashMap::new();
         for contour in contours.iter() {
             data.insert(contour.id(), Vec::new());
@@ -29,21 +29,16 @@ impl OverlapData {
             }
         }
 
-        if data.is_empty() {
-            None
-        } else {
-        data.retain(|_, overlaps| {
-            if overlaps.is_empty() {
-                false
-            } else {
-                true
-            }
-        });
-        Some(Self {
-            overlaps_map: data,
-        })
+        data.retain(|_, overlaps| if overlaps.is_empty() { false } else { true });
+        Self { overlaps: data }
     }
-        
+
+    pub fn are_overlapping(&self, id1: ContourID, id2: ContourID) -> bool {
+        self.overlaps.get(&id1).unwrap().contains(&id2)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.overlaps.is_empty()
     }
 }
 

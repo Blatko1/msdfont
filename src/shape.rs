@@ -2,13 +2,13 @@ use rusttype::OutlineBuilder;
 use std::slice::Iter;
 
 use crate::math::{ContourSignedDistance, SignedDistance};
-use crate::overlaps::{OverlapData};
+use crate::overlaps::OverlapData;
 use crate::vector::Vector2;
 
 #[derive(Debug)]
 pub struct Shape {
     contours: Vec<Contour>,
-    overlaps: Option<OverlapData>,
+    overlaps: OverlapData,
 }
 
 impl Shape {
@@ -17,11 +17,19 @@ impl Shape {
     pub fn iter(&self) -> Iter<'_, Contour> {
         self.contours.iter()
     }
+
+    pub fn are_overlapping(&self, id1: ContourID, id2: ContourID) -> bool {
+        self.overlaps.are_overlapping(id1, id2)
+    }
+
+    pub fn has_overlaps(&self) -> bool {
+        !self.overlaps.is_empty()
+    }
 }
 
 // TODO implement Form<> Into<> and some functions
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ContourID (u16);
+pub struct ContourID(u16);
 
 #[derive(Debug)]
 pub struct Contour {
@@ -45,6 +53,7 @@ impl Contour {
         }
         ContourSignedDistance {
             distance: shortest_dist,
+            contour_id: self.id,
             contour_winding: self.winding,
         }
     }

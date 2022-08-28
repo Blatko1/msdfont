@@ -60,7 +60,8 @@ impl Glyph<'_> {
     }
 }
 
-struct Scale(f32);
+#[derive(Debug, Clone, Copy)]
+pub struct Scale(f32);
 
 pub struct VMetrics {
     pub ascent: f32,
@@ -80,7 +81,8 @@ impl std::ops::Mul<f32> for VMetrics {
     }
 }
 
-struct GlyphId(pub u16);
+#[derive(Debug, Clone, Copy)]
+pub struct GlyphId(pub u16);
 
 impl From<char> for GlyphId {
     fn from(c: char) -> Self {

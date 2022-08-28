@@ -1,12 +1,13 @@
 use std::f32::consts::PI;
 
-use crate::shape::{Line, Quad, Winding};
+use crate::shape::{ContourID, Line, Quad, Winding};
 use crate::vector::Vector2;
 
 // TODO create struct which holds distance to segments used for
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct ContourSignedDistance {
     pub distance: SignedDistance,
+    pub contour_id: ContourID,
     pub contour_winding: Winding,
 }
 
