@@ -77,6 +77,9 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
     }
 
     // TODO IMPORTANT then check if shortest distance's contour has any intersections
+    // TODO IMPORTANT store all segment intersection points and check if cw contour 
+    // is contained in surrounding cw contour and ccw contour is contained in surrounding
+    // ccw contour and store the results (checking for duplicates)
 
     // cw - clockwise
     // ccw - counter clockwise
