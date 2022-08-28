@@ -25,3 +25,7 @@ image = "0.24.3"
 [[bench]]
 name = "cubic_benchmark"
 harness = false
+
+[[bench]]
+name = "sdf_generator_benchmark"
+harness = false
