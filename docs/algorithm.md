@@ -1,10 +1,10 @@
 # Signed distance generator :gear:
 
-In this `README`, I will explain how the algorithm works and propose possible improvements.
+In this `README`, I will explain how the algorithm for generating *signed distances* works and propose possible improvements.
 
 One of the project's most complex sub-algorithms is the *correction of contour overlaps*. It performs for each texture's texel, which heavily affects the performance. I'll specifically focus on this part in the explanation because it is very error-prone.
 
-## The Algorithm
+## **The Algorithm**
 
 First, it is important to note that this algorithm is divided into five subparts:
 
@@ -14,9 +14,12 @@ First, it is important to note that this algorithm is divided into five subparts
 - ***Overlap Correction***
 - **Convert distance fields to image data**
 
-### Parsing shape's instructions && Checking for intersections and storing intersection data
+### `Parsing shape's instructions` && `Checking for intersections and storing intersection data`
+---
 
 The glyph shape instructions are parsed and stored in memory for later use in the first part of the algorithm. *Glyph's shape* is constructed from **multiple segments** (*lines*, *quadratic Bezier curves*, *cubic Bezier curves*), which are grouped into closed **contours**.
+
+After the parsing, tests for finding intersections are run and the results are stored. In particular, for the shape, each contour is tested against another contour to find intersection points
 
 Instructions for glyph's shape are:
 
@@ -26,17 +29,20 @@ Instructions for glyph's shape are:
 
 - **quad_to** - draws a *Quadratic Bézier Curve* from the last point to a specified point with one control point
 
-- **curve_to** - draws a *Cubic Bézier Curve* from the last point to a specified point with two control points
+- **curve_to** - draws a *Cubic Bézier Curve* from the last point to a specified point with two control points (:warning:**Warning**: *not yet supported*)
 
 - **close** - indicates that there are no further instructions for the current contour and a new one can be opened
 
 <img src="https://upload.wikimedia.org/wikipedia/commons/9/99/Bezier_grad123.svg" alt="Line, Quadratic Bézier Curve and Cubic Bézier Curve" width="400"/>
 
+So, in the *code*, there is the `Shape` object, the `Contour` object and the `Segment` object, which can represent a `line`, `quadratic Bezier curve` or a `cubic Bezier curve`.
+
 ```mermaid 
 flowchart LR
-A[Shape] ==>|consists of| B(Contours)
+A[Shape] ==>|consists of multiple| B(Contour)
 B ==>|made of| C{Segments}
-C ==>|can be| D[Lines]
-C ==>|can be| E[Quadratic Bézier Curves]
-C ==>|can be| F[Cubic Bézier Curves]
+C ==>|is a single| D[Line]
+C ==>|is a single| E[Quadratic Bézier Curve]
+C ==>|is a single| F[Cubic Bézier Curve]
 ```
+
