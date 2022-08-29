@@ -12,11 +12,11 @@ Later **MSDF** and **MTSDF** will be implemented.
 
 This project wouldn't exist without *Chlumskys* **[msdfgen](https://github.com/Chlumsky/msdfgen)** and other Rust libraries which implement his algorithm.
 
-## TODO
+## TODO 📝
 
+* [x] Add a tool for creating custom shapes
 * [ ] Fix: Simple *Overlapping Contours* Correction - *WIP*
 * [ ] Improve *Overlapping Contours* Correction to *perfection* - *WIP*
-* [ ] Add a tool for creating custom shapes - *WIP*
 * [ ] Add a function for checking intersections for quadratic and cubic functions
 * [ ] Add support for **Cubic Bézier Curves**
 * [ ] Implement MSDF generation for fonts
@@ -27,9 +27,9 @@ This project wouldn't exist without *Chlumskys* **[msdfgen](https://github.com/C
 * [ ] Better organization of code
 * [ ] Construct a complete user-friendly library
 
-## The Algorithm
+## The Algorithm 🖥️
 
-To learn more about the algorithm read [`Algorithm`](./docs/algorithm.md)
+To learn more about the algorithm read [`Algorithm`](./docs/algorithm.md).
 
 ## Output Examples
 
