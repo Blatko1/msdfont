@@ -12,7 +12,7 @@ Later **MSDF** and **MTSDF** will be implemented.
 
 This project wouldn't exist without *Chlumskys* **[msdfgen](https://github.com/Chlumsky/msdfgen)** and other Rust libraries which implement his algorithm.
 
-## TODO 📝
+## TODO :memo:
 
 * [x] Add a tool for creating custom shapes
 * [ ] Fix: Simple *Overlapping Contours* Correction - *WIP*
@@ -27,7 +27,7 @@ This project wouldn't exist without *Chlumskys* **[msdfgen](https://github.com/C
 * [ ] Better organization of code
 * [ ] Construct a complete user-friendly library
 
-## The Algorithm 🖥️
+## The Algorithm :desktop_computer:
 
 To learn more about the algorithm read [`Algorithm`](./docs/algorithm.md).
 
@@ -35,14 +35,14 @@ To learn more about the algorithm read [`Algorithm`](./docs/algorithm.md).
 
 ### SDF
 
-![Signed Distance Field of '#' character](https://github.com/Blatko1/msdfont/blob/master/lib/examples/out/%23_char_SDF.png)
-![Signed Distance Field of 'A' character](https://github.com/Blatko1/msdfont/blob/master/lib/examples/out/A_char_SDF.png)
-![Signed Distance Field of 'K' character](https://github.com/Blatko1/msdfont/blob/master/lib/examples/out/K_char_SDF.png)
-![Signed Distance Field of 'M' character](https://github.com/Blatko1/msdfont/blob/master/lib/examples/out/M_char_SDF.png)
+![Signed Distance Field of '#' character](https://github.com/Blatko1/msdfont/blob/master/examples/out/%23_char_SDF.png)
+![Signed Distance Field of 'A' character](https://github.com/Blatko1/msdfont/blob/master/examples/out/A_char_SDF.png)
+![Signed Distance Field of 'K' character](https://github.com/Blatko1/msdfont/blob/master/examples/out/K_char_SDF.png)
+![Signed Distance Field of 'M' character](https://github.com/Blatko1/msdfont/blob/master/examples/out/M_char_SDF.png)
 
 ### pseudo-SDF
 
-![Pseudo Signed Distance Field of '#' character](https://github.com/Blatko1/msdfont/blob/master/lib/examples/out/%23_char_pseudo.png)
-![Pseudo Signed Distance Field of 'A' character](https://github.com/Blatko1/msdfont/blob/master/lib/examples/out/A_char_pseudo.png)
-![Pseudo Signed Distance Field of 'K' character](https://github.com/Blatko1/msdfont/blob/master/lib/examples/out/K_char_pseudo.png)
-![Pseudo Signed Distance Field of 'M' character](https://github.com/Blatko1/msdfont/blob/master/lib/examples/out/M_char_pseudo.png)
+![Pseudo Signed Distance Field of '#' character](https://github.com/Blatko1/msdfont/blob/master/examples/out/%23_char_pseudo.png)
+![Pseudo Signed Distance Field of 'A' character](https://github.com/Blatko1/msdfont/blob/master/examples/out/A_char_pseudo.png)
+![Pseudo Signed Distance Field of 'K' character](https://github.com/Blatko1/msdfont/blob/master/examples/out/K_char_pseudo.png)
+![Pseudo Signed Distance Field of 'M' character](https://github.com/Blatko1/msdfont/blob/master/examples/out/M_char_pseudo.png)
