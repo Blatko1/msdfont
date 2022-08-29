@@ -1,4 +1,4 @@
-use msdfont_rs::Msdfont;
+use msdfont::Msdfont;
 
 fn main() {
     let data = include_bytes!("fonts/monserat.ttf");
