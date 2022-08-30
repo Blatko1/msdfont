@@ -14,9 +14,7 @@ First, it is essential to note that this algorithm is divided into five subparts
 - ***Overlap Correction***
 - **Convert distance fields to image data**
 
-### `Parsing shape's instructions` && `Checking for intersections and storing intersection data`
-
----
+## `Parsing shape's instructions` && `Checking for intersections and storing intersection data`
 
 The glyph shape instructions are parsed and stored in memory for later use in the first part of the algorithm. *Glyph's shape* is constructed from **multiple segments** (*lines*, *quadratic Bezier curves*, *cubic Bezier curves*), which are grouped into closed **contours**.
 
@@ -47,7 +45,7 @@ flowchart LR
     C ==>|is a single| F[Cubic Bézier Curve]
 ```
 
-#### Object data
+### Object data
 
 Now after clarifying from what components a shape is made of, the following is a clearer view of data which every object holds. Simply said, *Shape* holds *Contour data* which holds *Segment data*.
 
@@ -111,8 +109,6 @@ $$
 A_y + t_1 (B_y - A_y) = C_y + t_2 (D_y - C_y)
 $$
 
-
-
 Finally, we'd easily extract $t_1$ and $t_2$ from one function, include them in the other, and get the correct expressions for each.
 
 Including $t_1$ in the equation for the first line returns the intersection point. Since these lines go from $P_0$ to $P_1$, variable $t$ has a condition $t \in [0, 1]$, so $t_1$ and $t_2$ should be checked if they exceed the bounds. If they don't, then the lines intersect.
@@ -120,7 +116,5 @@ Including $t_1$ in the equation for the first line returns the intersection poin
 > :warning::warning::warning: **IMPORTANT:** For testing quadratic and cubic curves against each other , there doesn't exist any numerical solution (as far as I know), so the testing would implement the logic of creating *sub curves* and testing their covered area. 
 > 
 > Since cubic curves aren't supported yet, the only problem, for now, is quadratic - quadratic curve intersection.
-
-
 
 ---
