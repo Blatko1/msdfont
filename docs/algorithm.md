@@ -1,5 +1,7 @@
 # Signed distance generator :gear:
 
+> **doc WIP**
+
 In this `README`, I will explain how the algorithm for generating *signed distances* works and propose possible improvements.
 
 One of the project's most complex sub-algorithms is the *correction of contour overlaps*. It performs for each texture's texel, which heavily affects the performance. I'll specifically focus on this part in the explanation because it is very error-prone.
