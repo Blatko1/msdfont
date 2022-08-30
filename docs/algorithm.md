@@ -81,7 +81,15 @@ flowchart TB
 
 - **Position Data** - position coordinates of a line or a quadratic Bezier curve or a cubic Bezier curve
 
-Linear function:
+### 
+
+### Intersection testing
+
+To find intersections, each contour's segment is tested against the other contour's segment and the result is stored. 
+
+For example, finding intersection points between two lines (*linear functions*) is easily achieved by equalization of their functions.
+
+Linear function example:
 
 $$
 f(t) = P_0 + t(P_1 - P_0)
@@ -105,7 +113,9 @@ $$
 
 
 
-Finally, we'd easily extract $t_1$ and $t_2$ from one function, include them in the other, and get the correct expressions.
+Finally, we'd easily extract $t_1$ and $t_2$ from one function, include them in the other, and get the correct expressions for each.
+
+Including $t_1$ in the equation for the first line returns the intersection point. Since these lines go from $P_0$ to $P_1$, variable $t$ has a condition $t \in [0, 1]$, so $t_1$ and $t_2$ should be checked if they exceed the bounds. If they don't, then the lines intersect.
 
 > :warning::warning::warning: **IMPORTANT:** For testing quadratic and cubic curves against each other , there doesn't exist any numerical solution (as far as I know), so the testing would implement the logic of creating *sub curves* and testing their covered area. 
 > 
