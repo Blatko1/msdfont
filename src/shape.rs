@@ -1,7 +1,7 @@
 use rusttype::OutlineBuilder;
 use std::slice::Iter;
 
-use crate::math::{ContourSignedDistance, SignedDistance};
+use crate::math::{SignedDistance};
 use crate::overlaps::OverlapData;
 use crate::vector::Vector2;
 
@@ -39,10 +39,10 @@ pub struct Contour {
 }
 
 impl Contour {
-    /// Returns the shortest distance from the provided point to the contour.
-    pub fn get_distance(&self, point: Vector2) -> ContourSignedDistance {
+    /// Returns the contour data with the signed distance to the provided point.
+    pub fn get_data(&self, point: Vector2) -> ContourData {
         let mut shortest_dist = SignedDistance::MAX;
-        // TODO maybe use iter
+
         for segment in &self.segments {
             let dist = segment.distance(point);
 
@@ -51,10 +51,10 @@ impl Contour {
                 shortest_dist = dist;
             }
         }
-        ContourSignedDistance {
+        ContourData {
+            id: self.id,
             distance: shortest_dist,
-            contour_id: self.id,
-            contour_winding: self.winding,
+            winding: self.winding,
         }
     }
 
@@ -69,6 +69,35 @@ impl Contour {
     pub fn winding(&self) -> Winding {
         self.winding
     }
+}
+
+#[derive(Debug)]
+struct ContourData {
+    pub id: ContourID,
+    pub distance: SignedDistance,
+    pub winding: Winding
+}
+
+impl ContourData {
+    /// Check if the winding is clockwise.
+    #[inline]
+    pub fn is_cw(&self) -> bool {
+        self.winding.is_cw()
+    }
+
+    /// Check if the winding is counter clockwise.
+    #[inline]
+    pub fn is_ccw(&self) -> bool {
+        self.winding.is_ccw()
+    }
+}
+
+// TODO create struct which holds distance to segments used for
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct ContourSignedDistance {
+    pub distance: SignedDistance,
+    pub contour_id: ContourID,
+    pub contour_winding: Winding,
 }
 
 #[derive(Debug)]
@@ -350,13 +379,13 @@ impl OutlineBuilder for ShapeBuilder {
 pub struct Winding(bool);
 
 impl Winding {
-    /// Check if the winding is clockwise.
+    /// Checks if the winding is clockwise.
     #[inline]
     pub fn is_cw(&self) -> bool {
         self.0 == true
     }
 
-    /// Check if the winding is counter clockwise.
+    /// Checks if the winding is counter clockwise.
     #[inline]
     pub fn is_ccw(&self) -> bool {
         !self.is_cw()

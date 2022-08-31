@@ -1,15 +1,7 @@
 use std::f32::consts::PI;
 
-use crate::shape::{ContourID, Line, Quad, Winding};
+use crate::shape::{Line, Quad};
 use crate::vector::Vector2;
-
-// TODO create struct which holds distance to segments used for
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct ContourSignedDistance {
-    pub distance: SignedDistance,
-    pub contour_id: ContourID,
-    pub contour_winding: Winding,
-}
 
 // TODO check if needed
 //impl PartialOrd for ContourSignedDistance {
@@ -34,6 +26,16 @@ impl SignedDistance {
         orthogonality: 0.0,
         sign: f32::NAN,
     };
+
+    #[inline]
+    pub fn is_sign_positive(&self) -> bool {
+        self.sign.is_sign_positive()
+    }
+
+    #[inline]
+    pub fn is_sign_negative(&self) -> bool {
+        !self.is_dist_positive()
+    }
 }
 
 impl PartialOrd for SignedDistance {
