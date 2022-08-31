@@ -34,7 +34,7 @@ impl SignedDistance {
 
     #[inline]
     pub fn is_sign_negative(&self) -> bool {
-        !self.is_dist_positive()
+        !self.is_sign_positive()
     }
 }
 

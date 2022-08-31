@@ -72,7 +72,7 @@ impl Contour {
 }
 
 #[derive(Debug)]
-struct ContourData {
+pub struct ContourData {
     pub id: ContourID,
     pub distance: SignedDistance,
     pub winding: Winding

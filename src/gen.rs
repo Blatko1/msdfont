@@ -105,13 +105,13 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
     let closest_surrounding_contour = surrounding_contours.first().unwrap();
     let cw_surrounding_contours = surrounding_contours
         .iter()
-        .filter(|dist| dist.contour_winding.is_cw())
+        .filter(|dist| dist.is_cw())
         .collect::<Vec<_>>();
     let ccw_surrounding_contours = surrounding_contours
         .iter()
-        .filter(|dist| dist.contour_winding.is_ccw())
+        .filter(|dist| dist.is_ccw())
         .collect::<Vec<_>>();
-    let closest_contour_with_positive_dist = sorted_contour_distances
+    let closest_contour_with_positive_dist = sorted_contours
         .iter()
         .find(|dist| dist.distance.sign.is_sign_positive())
         .unwrap();
@@ -127,7 +127,7 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
         let mut result = None;
         while let Some(item) = peekable.next() {
             if let Some(next) = peekable.peek() {
-                if next.contour_winding.is_ccw() {
+                if next.is_ccw() {
                     result = Some(item);
                     break;
                 }
@@ -138,10 +138,10 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
         }
         result
     }.unwrap();
-    let closest_ccw_contour_with_positive_dist = sorted_contour_distances
+    let closest_ccw_contour_with_positive_dist = sorted_contours
         .iter()
         .find(|dist| {
-            dist.contour_winding.is_ccw() && dist.distance.sign.is_sign_positive()
+            dist.is_ccw() && dist.distance.is_sign_positive()
         });
 
     let has_cw_surrounding_contours = !cw_surrounding_contours.is_empty();
@@ -170,8 +170,8 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
     // TODO test this whole portion with custom shapes
     if closest_surrounding_contour.is_cw() {
         // TODO create a struct for pixels and contourData, add a function to check if contour contains a pixel
-        if shortest_dist.sign.is_sign_positive() {
-            if closest_winding.is_cw() {
+        if closest_contour.distance.is_sign_positive() {
+            if closest_contour.is_cw() {
                     if let Some(closest_ccw) = closest_ccw_contour_with_positive_dist {
                         if furthest_cw_surrounding_contour.distance > closest_ccw.distance {
                             return closest_ccw.distance;
@@ -180,10 +180,10 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
                     //println!("furthest: {:?}", furthest_cw_surrounding_contour);
                     return furthest_cw_surrounding_contour.distance;
             } else {
-                if shape.are_overlapping(closest_contour_id, closest_surrounding_contour.contour_id) {
+                if shape.are_overlapping(closest_contour.id, closest_surrounding_contour.id) {
                     return closest_surrounding_contour.distance;
                 } else {
-                    return shortest_dist;
+                    return closest_contour.distance;
                 }
             }
         } else {
@@ -218,7 +218,7 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
         let closest_intersecting_cw = cw_surrounding_contours
             .iter()
             .filter(|dist| {
-                shape.are_overlapping(dist.contour_id, closest_ccw.contour_id)
+                shape.are_overlapping(dist.id, closest_ccw.id)
             })
             .reduce(|accum, item| {
                 if accum.distance < item.distance {
@@ -230,7 +230,7 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
         if let Some(intersecting) = closest_intersecting_cw {
             return intersecting.distance;
         }
-        return shortest_dist;
+        return closest_contour.distance;
     }
 
     //let (mut shortest_dist, mut winding) =
