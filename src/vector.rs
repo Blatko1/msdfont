@@ -7,7 +7,7 @@ pub struct Vector2 {
 }
 
 impl Vector2 {
-    const ZERO: Vector2 = Vector2 { x: 0.0, y: 0.0 };
+    pub const ZERO: Vector2 = Vector2 { x: 0.0, y: 0.0 };
 
     #[inline]
     pub fn new(x: f32, y: f32) -> Self {

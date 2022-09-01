@@ -1,4 +1,6 @@
-use crate::{math::SignedDistance, shape::Shape, vector::Vector2};
+use crate::{
+    font::GlyphOutline, math::SignedDistance, shape::Shape, vector::Vector2,
+};
 
 pub struct Bitmap {
     data: Vec<u8>,
@@ -6,12 +8,18 @@ pub struct Bitmap {
     height: u32,
 }
 
-impl Bitmap {}
+impl Bitmap {
+    pub fn data(self) -> Vec<u8> {
+        self.data
+    }
+}
 
-pub fn generate_sdf(shape: &Shape, pxrange: usize) -> Bitmap {
+pub fn generate_sdf(outline: &GlyphOutline, pxrange: usize) -> Bitmap {
+    let shape = &outline.shape;
     let mut data = Vec::new();
-    let width = 1;
-    let height = 1;
+    let width = outline.bbox.width();
+    let height = outline.bbox.height();
+    println!("width: {}, height: {}", width, height);
     for y in 0..height {
         for x in 0..width {
             let pixel = Vector2::new(x as f32 + 0.5, y as f32 + 0.5);
@@ -37,8 +45,8 @@ pub fn generate_sdf(shape: &Shape, pxrange: usize) -> Bitmap {
 
     Bitmap {
         data,
-        width,
-        height,
+        width: width as u32,
+        height: height as u32,
     }
 }
 
@@ -49,30 +57,36 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
         .map(|contour| contour.get_data(pixel))
         .collect::<Vec<_>>();
     // Sort all contours by their distance to pixel from closest to furthest.
-    sorted_contours
-        .sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap());
+    sorted_contours.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap());
 
-    let closest_contour = sorted_contours.first().expect(&format!("This shape contains no contours: {:?}", shape));
+    let closest_contour = sorted_contours
+        .first()
+        .expect(&format!("This shape contains no contours: {:?}", shape));
+    return closest_contour.distance;
     //println!("closest: {:?}", closest_contour);
-
+    /*
     // ______________Overlapping contours correction________________
 
     // // // // FIRST CHECK IF THERE ARE ANY INTERSECTIONS // // // //
     // TODO maybe transfer all below code into another function
-    if !shape.has_overlaps() {
+    if !shape.overlaps_exist() {
         return closest_contour.distance;
     }
 
     // TODO IMPORTANT then check if shortest distance's contour has any intersections
     // or is surrounded by a contour with the same winding
 
-    // TODO IMPORTANT store all segment intersection points and check if cw contour 
+    // if shape.has_intersections(closest_contour.id) {
+    //
+    // }
+
+    // TODO IMPORTANT store all segment intersection points and check if cw contour
     // is contained in surrounding cw contour and ccw contour is contained in surrounding
     // ccw contour and store the results (checking for duplicates)
 
     // cw - clockwise
     // ccw - counter clockwise
-    // IMPORTANT: clockwise contours have advantage over counter clockwise 
+    // IMPORTANT: clockwise contours have advantage over counter clockwise
     // contours only when they overlap
 
     // Next steps are:
@@ -83,17 +97,13 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
     // Since we sorted all contour from the start, all following contour
     // lists will be sorted.
 
-    // Gets all contours surrounding the current pixel. 
+    // Gets all contours surrounding the current pixel.
     // This can be easily achieved by testing:
     // - if distance from contour is positive and contour is clockwise;
     // - else if distance from contour is negative and contour is counter clockwise
-    let mut surrounding_contours = sorted_contours
+    let surrounding_contours = sorted_contours
         .iter()
-        .filter(|contr| {
-            (contr.distance.is_sign_positive() && contr.is_cw())
-                || (contr.distance.is_sign_negative()
-                    && contr.is_ccw())
-        })
+        .filter(|contour| contour.is_surrounding())
         .collect::<Vec<_>>();
 
     // If there are no surrounding contours return the distance to closest one.
@@ -103,6 +113,15 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
     //println!("Sorted Vec: \n {:?}", surrounding_contours);
 
     let closest_surrounding_contour = surrounding_contours.first().unwrap();
+    let closest_surrounding_contour_index = sorted_contours.iter().position(|contour| {
+        contour.is_surrounding()
+    }).unwrap();
+    // Represents the furthest contour that surrounds the same winding closest contour
+    // without opposite winding contours is between.
+    // let furthest_same_winding_contour = ;
+    // Represents all contours by distance from the closest one to the closest surrounding contour.
+    let contours_to_closest_surrounding = &(sorted_contours[0..closest_surrounding_contour_index]);
+
     let cw_surrounding_contours = surrounding_contours
         .iter()
         .filter(|dist| dist.is_cw())
@@ -137,20 +156,23 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
             break;
         }
         result
-    }.unwrap();
+    }
+    .unwrap();
     let closest_ccw_contour_with_positive_dist = sorted_contours
         .iter()
-        .find(|dist| {
-            dist.is_ccw() && dist.distance.is_sign_positive()
-        });
-
-    let has_cw_surrounding_contours = !cw_surrounding_contours.is_empty();
+        .find(|dist| dist.is_ccw() && dist.distance.is_sign_positive());
 
     // If pixel is not surrounded by any clockwise contours
     // then it should have negative dist.
     if cw_surrounding_contours.is_empty() {
         return closest_surrounding_contour.distance;
     }
+
+    // List of all non surrounding ccw contours.
+    let non_surrounding_ccw_contours = sorted_contours
+        .iter()
+        .filter(|contour| contour.is_ccw() && !contour.is_surrounding())
+        .collect::<Vec<_>>();
 
     // TODO FIX DOC
     // If pixel's distance is positive and  return the shortest distance, unless
@@ -171,22 +193,39 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
     if closest_surrounding_contour.is_cw() {
         // TODO create a struct for pixels and contourData, add a function to check if contour contains a pixel
         if closest_contour.distance.is_sign_positive() {
+            // Pixel is closest to surrounding clockwise contour or to non surrounding
+            // counter clockwise contour.
             if closest_contour.is_cw() {
-                    if let Some(closest_ccw) = closest_ccw_contour_with_positive_dist {
-                        if furthest_cw_surrounding_contour.distance > closest_ccw.distance {
-                            return closest_ccw.distance;
-                        }
+                // Pixel is guaranteed to be closest to the closest surrounding contour.
+                if let Some(closest_ccw) = closest_ccw_contour_with_positive_dist {
+                    if furthest_cw_surrounding_contour.distance
+                        > closest_ccw.distance
+                    {
+                        return closest_ccw.distance;
                     }
-                    //println!("furthest: {:?}", furthest_cw_surrounding_contour);
-                    return furthest_cw_surrounding_contour.distance;
+                }
+                //println!("furthest: {:?}", furthest_cw_surrounding_contour);
+                return furthest_cw_surrounding_contour.distance;
             } else {
-                if shape.are_overlapping(closest_contour.id, closest_surrounding_contour.id) {
+                // Pixel is closest to a non surrounding counterclockwise contour
+                // (that is surrounded by or that intersects the surrounding clockwise contour).
+                // TODO should return all intersection points.
+                let intersections = shape.get_intersections(
+                    closest_contour.id,
+                    closest_surrounding_contour.id,
+                );
+                if intersections {
                     return closest_surrounding_contour.distance;
                 } else {
+                    // No intersections meaning ccw contour is just surrounded by
+                    // the surrounding cw contour.
                     return closest_contour.distance;
                 }
             }
         } else {
+            // Distance sign is negative.
+            // Pixel is closest to a non surrounding clockwise contour
+            // (that is surrounded by or that intersects the surrounding clockwise contour).
             if let Some(closest_ccw) = closest_ccw_contour_with_positive_dist {
                 if furthest_cw_surrounding_contour.distance > closest_ccw.distance {
                     return closest_ccw.distance;
@@ -194,21 +233,6 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
             }
             return furthest_cw_surrounding_contour.distance;
         }
-        // TODO Should be the furthest clockwise contour with no counter clockwise contours in between
-        // TODO test if the distance is to furthest cw contour without ccw in between
-        //if closest_surrounding_ccw_index > 1 {
-        //    let furthest_surrounding_cw = surrounding_contours
-        //        .get(closest_surrounding_ccw_index - 1)
-        //        .unwrap();
-        //    return furthest_surrounding_cw.distance;
-        //    //if let Some(second) = furthest_surrounding_cw {
-        //    //    if second.contour_winding.is_cw() {
-        //    //        return second.distance;
-        //    //    }
-        //    //}
-        //}
-        //return shortest_dist;
-        //return closest_contour_with_positive_dist.distance;
     } else {
         // Pixel is either surrounded by a counter clockwise contour or is also surrounded
         // by an clockwise contour which intersects counter clockwise one and
@@ -217,9 +241,7 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
         let closest_ccw = closest_surrounding_contour;
         let closest_intersecting_cw = cw_surrounding_contours
             .iter()
-            .filter(|dist| {
-                shape.are_overlapping(dist.id, closest_ccw.id)
-            })
+            .filter(|dist| shape.get_intersections(dist.id, closest_ccw.id))
             .reduce(|accum, item| {
                 if accum.distance < item.distance {
                     accum
@@ -251,5 +273,5 @@ pub fn pixel_distance(shape: &Shape, pixel: Vector2) -> SignedDistance {
     //        shortest_dist = dist;
     //        winding = w;
     //    }
-    //}
+    //}*/
 }
