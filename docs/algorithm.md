@@ -1,6 +1,6 @@
 # Signed distance generator :gear:
 
-> **doc WIP**
+> **outdated doc - WIP**
 
 In this `README`, I will explain how the algorithm for generating *signed distances* works and propose possible improvements.
 
@@ -21,10 +21,6 @@ First, it is essential to note that this algorithm is divided into four stages:
 - **Find the shortest *distance***
 
 **Stage 3:**
-
-- ***Overlap Correction***
-
-**Stage 4:**
 
 - **Convert distance fields to image data**
 
@@ -144,7 +140,5 @@ To calculate the distance field for one texel or find the shortest distance to t
 Calculating distance between a segment, for example a line or a quadratic curve, and a texel can be achieved numerically by finding the difference between the function and the texel position. Achieving the distance is much better explained in [this](https://github.com/Chlumsky/msdfgen/files/3050967/thesis.pdf) document (*Chapter 2*) written by *Chlumsky*, the creator of `msdfgen`.
 
 Calculating distance between a cubic curve segment and a texel can't be achieved numerically because it requires solving a function of the fifth degree (*or can it? I am not sure, yet.*).
-
-## *`Overlap Correction`*
 
 ---
