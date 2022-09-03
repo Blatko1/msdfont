@@ -3,6 +3,10 @@ use std::f32::consts::PI;
 use crate::contour::{Line, Quad};
 use crate::vector::Vector2;
 
+// TODO is this needed?
+//#[derive(Debug, Clone, Copy)]
+//pub struct SignedDistance(pub f32);
+
 // TODO check if needed
 //impl PartialOrd for ContourSignedDistance {
 //    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
@@ -12,15 +16,15 @@ use crate::vector::Vector2;
 
 /// Distance from pixel to contour
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub struct SignedDistance {
+pub struct Distance {
     pub extended_dist: f32,
     pub real_dist: f32,
     pub orthogonality: f32,
     pub sign: f32,
 }
 
-impl SignedDistance {
-    pub const MAX: Self = SignedDistance {
+impl Distance {
+    pub const MAX: Self = Distance {
         extended_dist: f32::MAX,
         real_dist: f32::MAX,
         orthogonality: 0.0,
@@ -28,17 +32,19 @@ impl SignedDistance {
     };
 
     #[inline]
-    pub fn is_sign_positive(&self) -> bool {
-        self.sign.is_sign_positive()
+    pub fn real_signed(self) -> f32 {
+        // Maybe use a struct for sign to ensure it's not a zero.
+        self.sign * self.real_dist
     }
 
     #[inline]
-    pub fn is_sign_negative(&self) -> bool {
-        !self.is_sign_positive()
+    pub fn pseudo_signed(self) -> f32 {
+        // Maybe use a struct for sign to ensure it's not a zero.
+        self.sign * self.extended_dist
     }
 }
 
-impl PartialOrd for SignedDistance {
+impl PartialOrd for Distance {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         use std::cmp::Ordering;
         let diff = self.real_dist - other.real_dist;
@@ -55,7 +61,7 @@ impl PartialOrd for SignedDistance {
     }
 }
 
-pub fn signed_distance_from_line(line: Line, point: Vector2) -> SignedDistance {
+pub fn line_signed_distance(line: Line, point: Vector2) -> Distance {
     let p0 = line.from;
     let p1 = line.to;
     let p = point;
@@ -89,7 +95,7 @@ pub fn signed_distance_from_line(line: Line, point: Vector2) -> SignedDistance {
     let sign = ortho.signum();
     let orthogonality = ortho.abs();
 
-    SignedDistance {
+    Distance {
         extended_dist,
         real_dist,
         orthogonality,
@@ -97,7 +103,7 @@ pub fn signed_distance_from_line(line: Line, point: Vector2) -> SignedDistance {
     }
 }
 
-pub fn signed_distance_from_quad(quad: Quad, point: Vector2) -> SignedDistance {
+pub fn quad_signed_distance(quad: Quad, point: Vector2) -> Distance {
     let p0 = quad.from;
     let p1 = quad.ctrl;
     let p2 = quad.to;
@@ -158,7 +164,7 @@ pub fn signed_distance_from_quad(quad: Quad, point: Vector2) -> SignedDistance {
     let sign = ortho.signum();
     let orthogonality = ortho.abs();
 
-    SignedDistance {
+    Distance {
         extended_dist,
         real_dist,
         orthogonality,
@@ -487,20 +493,17 @@ fn cubic_root_test() {
     let b = 100.4;
     let c = -100.4;
     let d = -0.29;
-    let (roots, discriminant, q, r) = test_find_cubic_roots(a, b, c, d);
+    let (_, discriminant, q, r) = test_find_cubic_roots(a, b, c, d);
 
     assert!(q < 0.0);
     assert!(r < 0.0);
     assert!(discriminant < 0.0);
-}
 
-#[test]
-fn cubic_root_test2() {
     let a = 1.0;
     let b = -1.0;
     let c = -1.6;
     let d = 2.5;
-    let (roots, discriminant, q, r) = test_find_cubic_roots(a, b, c, d);
+    let (_, discriminant, q, r) = test_find_cubic_roots(a, b, c, d);
 
     assert!(discriminant > 0.0);
 }

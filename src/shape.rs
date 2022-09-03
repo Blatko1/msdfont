@@ -2,18 +2,13 @@ use std::slice::Iter;
 
 use owned_ttf_parser::OutlineBuilder;
 
-use crate::contour::{
-    BoundBox, Contour, ContourID, Curve, Line, Quad, Segment, Winding,
-};
+use crate::contour::{Contour, Curve, Line, Quad, Segment, Winding};
 use crate::font::Scale;
-use crate::math::SignedDistance;
-use crate::overlaps::OverlapData;
 use crate::vector::Vector2;
 
 #[derive(Debug)]
 pub struct Shape {
     contours: Vec<Contour>,
-    overlaps: OverlapData,
 }
 
 impl Shape {
@@ -21,18 +16,6 @@ impl Shape {
     #[inline]
     pub fn iter(&self) -> Iter<'_, Contour> {
         self.contours.iter()
-    }
-
-    pub fn get_intersections(&self, id1: ContourID, id2: ContourID) -> bool {
-        self.overlaps.are_overlapping(id1, id2)
-    }
-
-    pub fn has_intersections(&self, id: ContourID) -> bool {
-        self.overlaps.has_intersections(id)
-    }
-
-    pub fn overlaps_exist(&self) -> bool {
-        !self.overlaps.is_empty()
     }
 }
 
@@ -143,53 +126,19 @@ impl ShapeBuilder {
             self.last_point.is_some(),
             "ShapeBuilder Error: The last contour has already been closed!"
         );
-
-        let highest_point = self
-            .temp_segments
-            .iter()
-            .map(|segment| segment.highest_point())
-            .reduce(|accum, item| if accum.y > item.y { accum } else { item })
-            .unwrap();
-        let lowest_point = self
-            .temp_segments
-            .iter()
-            .map(|segment| segment.lowest_point())
-            .reduce(|accum, item| if accum.y < item.y { accum } else { item })
-            .unwrap();
-        let leftmost_point = self
-            .temp_segments
-            .iter()
-            .map(|segment| segment.leftmost_point())
-            .reduce(|accum, item| if accum.x < item.x { accum } else { item })
-            .unwrap();
-        let rightmost_point = self
-            .temp_segments
-            .iter()
-            .map(|segment| segment.rightmost_point())
-            .reduce(|accum, item| if accum.x > item.x { accum } else { item })
-            .unwrap();
-
-        let bound_box = BoundBox {
-            tl: Vector2::new(leftmost_point.x, highest_point.y),
-            br: Vector2::new(rightmost_point.x, lowest_point.y),
-        };
-
-        let winding = Winding(self.shoelace > 0.0);
-        let id = ContourID(self.contours.len() as u16);
+        // TODO test if windings are right
+        let winding = Winding(self.shoelace < 0.0);
+        println!("winding: {:?}", winding);
         let segments = self.temp_segments.drain(..).collect::<Vec<_>>();
 
-        self.contours
-            .push(Contour::new(id, segments, winding, bound_box));
+        self.contours.push(Contour::new(segments, winding));
         self.shoelace = 0.0;
         self.last_point = None;
     }
 
     pub fn build(self) -> Shape {
-        let overlaps = OverlapData::from_contours(&self.contours);
-        println!("overlaps: {:?}", overlaps);
         Shape {
             contours: self.contours,
-            overlaps,
         }
     }
 }

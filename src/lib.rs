@@ -6,14 +6,13 @@ mod overlaps;
 mod shape;
 mod vector;
 
-use font::{Font, Scale};
-use image::{DynamicImage, GenericImage, Rgba};
-use rusttype::Point;
-use shape::ShapeBuilder;
+pub use shape::ShapeBuilder;
 
-use crate::vector::Vector2;
+pub use crate::vector::Vector2;
 
-#[test]
+pub use font::{Font, Scale};
+
+/*#[test]
 fn main_test() {
     let data = include_bytes!("../examples/fonts/monserat.ttf");
     //let font = Font::try_from_bytes(data).unwrap();
@@ -50,7 +49,7 @@ fn main_test() {
             //let y = 67;
             let pixel = Vector2::new(x as f32 + 0.5, y as f32 + 0.5);
 
-            let distance = gen::pixel_distance(&glyph.shape, pixel);
+            let distance = gen::shortest_distance(&glyph.shape, pixel);
             //println!("final: {:?}", distance);
             let signed_distance = -distance.sign * distance.real_dist;
 
@@ -73,4 +72,4 @@ fn main_test() {
         }
     }
     image.save("examples/test.png").unwrap();
-}
+}*/

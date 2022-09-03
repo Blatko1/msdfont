@@ -11,15 +11,12 @@ keywords = ["text", "ttf", "truetype", "font", "msdf", "sdf"]
 # categories = ["msdf", "font", "text"]
 
 [dependencies]
-rusttype = "0.9.2"
-image = "0.24.3"
 owned_ttf_parser = "0.15.1"
 hashbrown = "0.12.3"
 
 [dev-dependencies]
 criterion = "0.3.6"
 image = "0.24.3"
-lyon_path = "1.0.0"
 
 [[bench]]
 name = "cubic_benchmark"
