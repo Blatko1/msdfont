@@ -3,7 +3,7 @@
 [![Build Status](https://img.shields.io/github/workflow/status/Blatko1/msdfont-rs/Rust?logo=github)](https://github.com/Blatko1/msdfont-rs/actions)
 [![License](https://img.shields.io/github/license/Blatko1/msdfont-rs?color=%23537aed)](https://github.com/Blatko1/msdfont-rs/blob/master/LICENSE)
 
-> **WIP** - Developer currently suffering because glyphs with overlapping contours exist. (but not for long!)
+> **WIP**
 
 **Multi-channel signed distance field** (`M`[`SDF`](https://prideout.net/blog/distance_fields/)) generator for fonts implemented in pure Rust.
 
