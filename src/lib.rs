@@ -1,16 +1,15 @@
-mod contour;
+mod shape;
 mod font;
 mod gen;
 mod math;
 mod overlaps;
-mod shape;
+mod path;
 mod vector;
 
-pub use shape::ShapeBuilder;
+pub use path::*;
+pub use font::*;
 
 pub use crate::vector::Vector2;
-
-pub use font::{Font, Scale};
 
 /*#[test]
 fn main_test() {

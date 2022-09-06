@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use crate::contour::{Line, Quad};
+use crate::shape::{Line, Quad};
 use crate::vector::Vector2;
 
 // TODO is this needed?

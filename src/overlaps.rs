@@ -1,5 +1,5 @@
 use crate::{
-    contour::{Curve, Line, Quad, Segment},
+    shape::{Curve, Line, Quad, Segment},
     vector::Vector2,
 };
 

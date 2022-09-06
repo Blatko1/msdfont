@@ -9,7 +9,7 @@ fn sdf_benchmark(crit: &mut Criterion) {
     let c = black_box(-100.4);
     let d = black_box(-0.29);
     crit.bench_function("default overlap correction", |bencher| {
-        bencher.iter(|| print!("aa"))
+        bencher.iter(|| todo!())
     });
 }
 

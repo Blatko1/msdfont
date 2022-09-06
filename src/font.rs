@@ -1,11 +1,11 @@
-use std::sync::Arc;
+use std::{sync::Arc, ops::Mul};
 
 use owned_ttf_parser::{GlyphId, Rect};
 
 use crate::{
     gen::Bitmap,
-    shape::{Shape, ShapeBuilder},
-    vector::Vector2,
+    path::{PathBuilder},
+    vector::Vector2, shape::Shape,
 };
 
 pub struct Font<'a> {
@@ -28,7 +28,7 @@ impl<'a> Font<'a> {
     }
 
     pub fn v_metrics(&self, scale: Scale) -> VMetrics {
-        let scale = scale.normalize(1.0 / self.units_per_em() as f32);
+        let scale = scale.normalize(self.units_per_em() as f32);
         let glyph_height =
             self.inner.ascender() as f32 - self.inner.descender() as f32;
         let height_factor = scale.0 / glyph_height;
@@ -62,27 +62,32 @@ pub struct Glyph<'font> {
 
 impl Glyph<'_> {
     pub fn build(&self, scale: Scale) -> GlyphOutline {
-        let scale = scale.normalize(1.0 / self.units_per_em as f32);
-        let mut builder = ShapeBuilder::new(scale);
+        let norm_scale = scale.normalize(self.units_per_em as f32);
+        let mut builder = PathBuilder::new_with_norm_scale(norm_scale);
 
         let unscaled_rect = self.font.outline_glyph(self.id, &mut builder).unwrap();
 
-        let bbox = BBox::from(unscaled_rect).resize(scale);
+        let bbox = BBox::from(unscaled_rect).resize(norm_scale);
         dbg!(bbox);
 
-        let shape = builder.build();
+        let shape = builder.build_shape();
 
-        GlyphOutline { bbox, shape, scale }
+        GlyphOutline { bbox, shape }
     }
 }
 
 pub struct GlyphOutline {
     pub(crate) bbox: BBox,
     pub(crate) shape: Shape,
-    pub(crate) scale: Scale,
 }
 
 impl GlyphOutline {
+
+    pub fn from_shape(shape: Shape) -> Self {
+        let bbox = shape.bbox();
+        Self { bbox, shape }
+    }
+
     /// Consumes the [`Glyph`] and returns a image bitmap with
     /// signed distance fields.
     pub fn generate_sdf(self, range: usize) -> Bitmap {
@@ -115,10 +120,10 @@ pub struct BBox {
 }
 
 impl BBox {
-    fn resize(self, scale: Scale) -> BBox {
+    fn resize(self, scale: NormScale) -> BBox {
         BBox {
-            tl: self.tl * scale.0,
-            br: self.br * scale.0,
+            tl: self.tl * scale,
+            br: self.br * scale,
         }
     }
 
@@ -147,14 +152,59 @@ impl From<Rect> for BBox {
 pub struct Scale(pub f32);
 
 impl Scale {
-    fn normalize(self, factor: f32) -> Self {
-        Self(self.0 * factor)
+    pub fn new(scale: f32) -> Self {
+        Self(scale)
+    }
+
+    pub(crate) fn normalize(self, div_factor: f32) -> NormScale {
+        NormScale(self.0 / div_factor)
     }
 }
 
 impl Default for Scale {
     fn default() -> Self {
-        Self(32.0)
+        Self(1.0)
+    }
+}
+
+/// Represents a normalized scale which is used for
+/// scaling the glyph in the build process.
+/// 
+/// Normalized means that the scale has already been divided by
+/// the units_per_em factor which each font has.
+/// // TODO should scale field be public?
+#[derive(Debug, Clone, Copy)]
+pub struct NormScale(f32);
+
+impl Mul<f32> for NormScale {
+    type Output = f32;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        self.0 * rhs
+    }
+}
+
+impl Mul<NormScale> for f32 {
+    type Output = f32;
+
+    fn mul(self, rhs: NormScale) -> Self::Output {
+        self * rhs.0
+    }
+}
+
+impl Mul<Vector2> for NormScale {
+    type Output = Vector2;
+
+    fn mul(self, rhs: Vector2) -> Self::Output {
+        rhs * self.0
+    }
+}
+
+impl Mul<NormScale> for Vector2 {
+    type Output = Vector2;
+
+    fn mul(self, rhs: NormScale) -> Self::Output {
+        self * rhs.0
     }
 }
 
