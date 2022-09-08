@@ -19,9 +19,52 @@ impl Shape {
         self.contours.iter()
     }
 
-    // TODO
+    /// Returns a bounding box which is created paying attention to
+    /// line and curve points instead of their bodies.
+    /// TODO: maybe not needed
     pub fn bbox(&self) -> BBox {
-        BBox { tl: Vector2::new(0.0, 1000.0), br: Vector2::new(1000.0, 000.0) }
+        let mut x_iter = Vec::new();
+        let mut y_iter = Vec::new();
+        for contour in self.contours.iter() {
+            for seg in contour.iter() {
+                match seg {
+                    Segment::Line(l) => {
+                        x_iter.push(l.from.x);
+                        x_iter.push(l.to.x);
+
+                        y_iter.push(l.from.y);
+                        y_iter.push(l.to.y);
+                    },
+                    Segment::Quadratic(q) => {
+                        x_iter.push(q.from.x);
+                        x_iter.push(q.ctrl.x);
+                        x_iter.push(q.to.x);
+
+                        y_iter.push(q.from.y);
+                        y_iter.push(q.ctrl.y);
+                        y_iter.push(q.to.y);
+                    },
+                    Segment::Cubic(c) => {
+                        x_iter.push(c.from.x);
+                        x_iter.push(c.ctrl1.x);
+                        x_iter.push(c.ctrl2.x);
+                        x_iter.push(c.to.x);
+
+                        y_iter.push(c.from.y);
+                        y_iter.push(c.ctrl1.y);
+                        y_iter.push(c.ctrl2.y);
+                        y_iter.push(c.to.y);
+                    },
+                }
+            }
+        }
+        // Highest y point of the shape.
+        let top = *y_iter.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).expect("No segments? Impossible!");
+        let bottom = *y_iter.iter().min_by(|a, b| a.partial_cmp(b).unwrap()).expect("No segments? Impossible!");
+        let left = *x_iter.iter().min_by(|a, b| a.partial_cmp(b).unwrap()).expect("No segments? Impossible!");
+        let right = *x_iter.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).expect("No segments? Impossible!");
+
+        BBox { tl: Vector2::new(left, top), br: Vector2::new(right, bottom) }
     }
 }
 
@@ -75,7 +118,7 @@ impl Segment {
         match self {
             Segment::Line(l) => l.calculate_distance(point),
             Segment::Quadratic(q) => q.calculate_distance(point),
-            Segment::Cubic(c) => todo!(),
+            Segment::Cubic(c) => c.calculate_distance(point),
         }
     }
 }
@@ -141,6 +184,11 @@ impl Curve {
             ctrl2,
             to,
         }
+    }
+
+    #[inline]
+    pub fn calculate_distance(&self, point: Vector2) -> Distance {
+        unimplemented!()
     }
 
     // TODO explain

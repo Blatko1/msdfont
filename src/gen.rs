@@ -1,4 +1,5 @@
 use crate::{font::GlyphOutline, math::Distance, shape::Shape, vector::Vector2};
+
 pub struct Bitmap {
     data: Vec<u8>,
     width: u32,
@@ -21,7 +22,6 @@ pub fn gen_sdf(outline: GlyphOutline, range: usize) -> Bitmap {
         for x in 0..width as usize {
             let pixel = Vector2::new(x as f32 + 0.5, y as f32 + 0.5);
 
-            // Negative sign because ttf parser draws every additive contour counterclockwise
             let signed_distance = - shortest_distance(&shape, pixel).real_signed();
 
             let normalized = (signed_distance / range as f32) + 0.5;

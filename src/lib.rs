@@ -6,7 +6,7 @@ mod overlaps;
 mod path;
 mod vector;
 
-pub use path::*;
+pub use path::PathBuilder;
 pub use font::*;
 
 pub use crate::vector::Vector2;

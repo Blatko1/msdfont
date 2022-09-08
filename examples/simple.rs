@@ -6,7 +6,7 @@ fn main() {
 
     let font = Font::from_slice(data);
 
-    let glyph = font.glyph('Ž').build(Scale(100.0));
+    let glyph = font.glyph('q').build(Scale(100.0));
     let width = glyph.width() as u32;
     let height = glyph.height() as u32;
     let offset = 10;

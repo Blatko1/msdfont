@@ -1,4 +1,4 @@
-use owned_ttf_parser::OutlineBuilder;
+use rusttype::OutlineBuilder;
 
 use crate::Scale;
 use crate::shape::{Contour, Curve, Line, Quad, Segment, Winding, Shape};
@@ -16,7 +16,7 @@ use crate::vector::Vector2;
 #[derive(Debug)]
 pub struct PathBuilder {
     contours: Vec<Contour>,
-    scale: NormScale,
+    //scale: NormScale,
 
     // Temporary values
     shoelace: f32,
@@ -33,29 +33,6 @@ impl PathBuilder {
     pub fn new() -> Self {
         Self {
             contours: Vec::new(),
-            scale: Scale::default().normalize(1.0),
-
-            shoelace: 0.0,
-            last_point: None,
-            temp_segments: Vec::new(),
-        }
-    }
-
-    pub fn new_with_scale(scale: Scale) -> Self {
-        Self {
-            contours: Vec::new(),
-            scale: scale.normalize(1.0),
-
-            shoelace: 0.0,
-            last_point: None,
-            temp_segments: Vec::new(),
-        }
-    }
-
-    pub(crate) fn new_with_norm_scale(scale: NormScale) -> Self {
-        Self {
-            contours: Vec::new(),
-            scale,
 
             shoelace: 0.0,
             last_point: None,
@@ -64,27 +41,17 @@ impl PathBuilder {
     }
 
     pub fn open_at(&mut self, x: f32, y: f32) {
-        assert!(
-            self.last_point.is_none(),
-            "ShapeBuilder Error: The last contour has not been closed!"
-        );
-        assert!(
-            self.temp_segments.is_empty(),
-            "ShapeBuilder Error: The last contour wasn't closed!"
-        );
+        self.open_at_check();
 
-        let to = Vector2::new(x * self.scale, y * self.scale);
+        let to = Vector2::new(x, y);
         self.last_point = Some(to);
     }
 
     pub fn line_to(&mut self, x: f32, y: f32) {
-        assert!(
-            self.last_point.is_some(),
-            "ShapeBuilder Error: Open a new contour before adding segments!"
-        );
+        self.line_to_check();
 
         let from = self.last_point.unwrap();
-        let to = Vector2::new(x * self.scale, y * self.scale);
+        let to = Vector2::new(x, y);
         let line = Line::new(from, to);
 
         self.shoelace += line.shoelace();
@@ -93,14 +60,11 @@ impl PathBuilder {
     }
 
     pub fn quad_to(&mut self, ctrl_x: f32, ctrl_y: f32, x: f32, y: f32) {
-        assert!(
-            self.last_point.is_some(),
-            "ShapeBuilder Error: Open a new contour before adding segments!"
-        );
+        self.quad_to_check();
 
         let from = self.last_point.unwrap();
-        let control = Vector2::new(ctrl_x * self.scale, ctrl_y * self.scale);
-        let to = Vector2::new(x * self.scale, y * self.scale);
+        let control = Vector2::new(ctrl_x, ctrl_y);
+        let to = Vector2::new(x, y);
         let quad = Quad::new(from, control, to);
 
         self.shoelace += quad.shoelace();
@@ -118,15 +82,12 @@ impl PathBuilder {
         x: f32,
         y: f32,
     ) {
-        assert!(
-            self.last_point.is_some(),
-            "ShapeBuilder Error: Open a new contour before adding segments!"
-        );
+        self.curve_to_check();
 
         let from = self.last_point.unwrap();
-        let ctrl1 = Vector2::new(ctrl1_x * self.scale, ctrl1_y * self.scale);
-        let ctrl2 = Vector2::new(ctrl2_x * self.scale, ctrl2_y * self.scale);
-        let to = Vector2::new(x * self.scale, y * self.scale);
+        let ctrl1 = Vector2::new(ctrl1_x, ctrl1_y);
+        let ctrl2 = Vector2::new(ctrl2_x, ctrl2_y);
+        let to = Vector2::new(x, y);
         let curve = Curve::new(from, ctrl1, ctrl2, to);
 
         self.shoelace += curve.shoelace();
@@ -137,14 +98,8 @@ impl PathBuilder {
     }
 
     pub fn close(&mut self) {
-        assert!(
-            !self.temp_segments.is_empty(),
-            "ShapeBuilder Error: There are no contours to close or there are zero segments!"
-        );
-        assert!(
-            self.last_point.is_some(),
-            "ShapeBuilder Error: The last contour has already been closed!"
-        );
+        self.close_check();
+
         // TODO test if windings are right
         let winding = Winding(self.shoelace < 0.0);
         //println!("winding: {:?}", winding);
@@ -155,8 +110,59 @@ impl PathBuilder {
         self.last_point = None;
     }
 
+    #[inline]
+    fn open_at_check(&self) {
+        assert!(
+            self.last_point.is_none(),
+            "PathBuilder Error: The last contour has not been closed!"
+        );
+        assert!(
+            self.temp_segments.is_empty(),
+            "PathBuilder Error: The last contour wasn't closed!"
+        );
+    }
+
+    #[inline]
+    fn line_to_check(&self) {
+        assert!(
+            self.last_point.is_some(),
+            "PathBuilder Error: Open a new contour before adding segments!"
+        );
+    }
+
+    #[inline]
+    fn quad_to_check(&self) {
+        assert!(
+            self.last_point.is_some(),
+            "PathBuilder Error: Open a new contour before adding segments!"
+        );
+    }
+
+    #[inline]
+    fn curve_to_check(&self) {
+        assert!(
+            self.last_point.is_some(),
+            "PathBuilder Error: Open a new contour before adding segments!"
+        );
+    }
+
+    #[inline]
+    fn close_check(&self) {
+        assert!(
+            !self.temp_segments.is_empty(),
+            "PathBuilder Error: There are no contours to close or there are zero segments!"
+        );
+        assert!(
+            self.last_point.is_some(),
+            "PathBuilder Error: The last contour has already been closed!"
+        );
+    }
+
     // TODO add checks if last contour was closed
     pub fn build_shape(self) -> Shape {
+        assert!(!self.contours.is_empty(), "PathBuilder Error: There are no contours.");
+        assert!(self.last_point.is_none(), "PathBuilder Error: The last contour is still open.");
+
         Shape::new(self.contours)
     }
 }

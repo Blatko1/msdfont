@@ -4,7 +4,7 @@
 
 In this `README`, I will explain how the algorithm for generating *signed distances* works and propose possible improvements.
 
-One of the project's most complex sub-algorithms is the *correction of contour overlaps*. It performs for each texture's texel, which heavily affects the performance. I'll specifically focus on this part in the explanation because it is very error-prone.
+One of the more complex sub-algorithms in this crate is the *correction of contour overlaps*. It performs after parsing the glyph shape and after determining if the correction is needed.
 
 ## **The Algorithm**
 
@@ -17,12 +17,16 @@ First, it is essential to note that this algorithm is divided into four stages:
 
 **Stage 2:**
 
-- **Generate the *distance fields***
-- **Find the shortest *distance***
+- ***Overlap correction***
 
 **Stage 3:**
 
-- **Convert distance fields to image data**
+- **Generate the *distance fields***
+- **Find the shortest *distance***
+
+**Stage 4:**
+
+- **Convert distance fields to bitmap/image data**
 
 ## `Parsing shape's instructions` && `Checking for intersections and storing intersection data`
 
@@ -89,8 +93,6 @@ flowchart TB
 
 - **Position Data** - position coordinates of a line or a quadratic Bezier curve or a cubic Bezier curve
 
-
-
 ### **Intersection testing**
 
 To find intersections, each contour's segment is tested against the other contour's segment and the result is stored. For example, finding intersection points between two lines (*linear functions*) is easily achieved by equalization of their functions.
@@ -124,6 +126,10 @@ Including $t_1$ in the equation for the first line returns the intersection poin
 > :warning::warning::warning: **IMPORTANT:** For testing quadratic and cubic curves against each other , there doesn't exist any numerical solution (as far as I know), so the testing would implement the logic of creating *sub curves* and testing their covered area. 
 > 
 > Since cubic curves aren't supported yet, the only problem, for now, is quadratic - quadratic curve intersection.
+
+## *`Overlapping correction`*
+
+
 
 ## `Generating distance fields` && `Finding the shortest distance`
 

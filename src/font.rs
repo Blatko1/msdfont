@@ -1,6 +1,6 @@
 use std::{sync::Arc, ops::Mul};
 
-use owned_ttf_parser::{GlyphId, Rect};
+use rusttype::{Font as RTFont, GlyphId, Glyph as RTGlyph};
 
 use crate::{
     gen::Bitmap,
@@ -9,18 +9,18 @@ use crate::{
 };
 
 pub struct Font<'a> {
-    inner: Arc<owned_ttf_parser::Face<'a>>,
+    inner: Arc<RTFont<'a>>,
 }
 
 impl<'a> Font<'a> {
     pub fn from_slice(data: &'a [u8]) -> Self {
         // TODO add custom errors for results
-        let face = Arc::new(owned_ttf_parser::Face::from_slice(data, 0).unwrap());
+        let face = Arc::new(RTFont::try_from_bytes(data).unwrap());
         Self { inner: face }
     }
 
-    pub fn glyph_count(&self) -> u16 {
-        self.inner.number_of_glyphs()
+    pub fn glyph_count(&self) -> usize {
+        self.inner.glyph_count()
     }
 
     pub fn units_per_em(&self) -> u16 {
@@ -28,36 +28,26 @@ impl<'a> Font<'a> {
     }
 
     pub fn v_metrics(&self, scale: Scale) -> VMetrics {
-        let scale = scale.normalize(self.units_per_em() as f32);
-        let glyph_height =
-            self.inner.ascender() as f32 - self.inner.descender() as f32;
-        let height_factor = scale.0 / glyph_height;
-
-        self.v_metrics_unscaled() * height_factor
+        self.inner.v_metrics(scale)
     }
 
     pub fn v_metrics_unscaled(&self) -> VMetrics {
-        let font = &self.inner;
-        VMetrics {
-            ascent: font.ascender() as f32,
-            descent: font.descender() as f32,
-            line_gap: font.line_gap() as f32,
-        }
+        self.inner.v_metrics_unscaled()
     }
 
+    // TODO maybe use IntoGlyphId
     pub fn glyph<C: Into<char>>(&self, id: C) -> Glyph<'a> {
-        let index = self.inner.glyph_index(id.into()).unwrap();
+        let glyph = self.inner.glyph(id);
         let font = Arc::clone(&self.inner);
         //assert!(index.0 < self.glyph_count());
 
-        Glyph { font, units_per_em: self.units_per_em(), id: index }
+        Glyph { inner: glyph, units_per_em: self.units_per_em() }
     }
 }
 
 pub struct Glyph<'font> {
-    font: Arc<owned_ttf_parser::Face<'font>>,
+    inner: RTGlyph<'font>,
     units_per_em: u16,
-    id: GlyphId,
 }
 
 impl Glyph<'_> {
@@ -65,9 +55,10 @@ impl Glyph<'_> {
         let norm_scale = scale.normalize(self.units_per_em as f32);
         let mut builder = PathBuilder::new_with_norm_scale(norm_scale);
 
-        let unscaled_rect = self.font.outline_glyph(self.id, &mut builder).unwrap();
+        let unscaled_rect = self.inner.scaled(scale)outline_glyph(self.id, &mut builder).unwrap();
 
-        let bbox = BBox::from(unscaled_rect).resize(norm_scale);
+        let mut bbox = BBox::from(unscaled_rect);
+        bbox._resize(norm_scale);
         dbg!(bbox);
 
         let shape = builder.build_shape();
@@ -83,8 +74,7 @@ pub struct GlyphOutline {
 
 impl GlyphOutline {
 
-    pub fn from_shape(shape: Shape) -> Self {
-        let bbox = shape.bbox();
+    pub fn from_shape(shape: Shape, bbox: BBox) -> Self {
         Self { bbox, shape }
     }
 
@@ -120,20 +110,30 @@ pub struct BBox {
 }
 
 impl BBox {
-    fn resize(self, scale: NormScale) -> BBox {
-        BBox {
-            tl: self.tl * scale,
-            br: self.br * scale,
+    pub fn new(tl: Vector2, br: Vector2) -> Self {
+        Self {
+            tl,
+            br,
         }
     }
 
+    pub fn resize(&mut self, scale: Scale) {
+        let scale = scale.normalize(1.0);
+        self._resize(scale);
+    }
+
+    pub(crate) fn _resize(&mut self, scale: NormScale) {
+        self.tl = self.tl * scale;
+        self.br = self.br * scale;
+    }
+
     #[inline]
-    fn width(&self) -> f32 {
+    pub fn width(&self) -> f32 {
         self.br.x - self.tl.x
     }
 
     #[inline]
-    fn height(&self) -> f32 {
+    pub fn height(&self) -> f32 {
         self.tl.y - self.br.y
     }
 }
