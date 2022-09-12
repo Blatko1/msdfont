@@ -59,10 +59,10 @@ impl Shape {
             }
         }
         // Highest y point of the shape.
-        let top = *y_iter.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).expect("No segments? Impossible!");
-        let bottom = *y_iter.iter().min_by(|a, b| a.partial_cmp(b).unwrap()).expect("No segments? Impossible!");
-        let left = *x_iter.iter().min_by(|a, b| a.partial_cmp(b).unwrap()).expect("No segments? Impossible!");
-        let right = *x_iter.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).expect("No segments? Impossible!");
+        let top = *y_iter.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).expect("No segments? Impossible!") as i32;
+        let bottom = *y_iter.iter().min_by(|a, b| a.partial_cmp(b).unwrap()).expect("No segments? Impossible!") as i32;
+        let left = *x_iter.iter().min_by(|a, b| a.partial_cmp(b).unwrap()).expect("No segments? Impossible!") as i32;
+        let right = *x_iter.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).expect("No segments? Impossible!") as i32;
 
         BBox { tl: Vector2::new(left, top), br: Vector2::new(right, bottom) }
     }
@@ -80,7 +80,7 @@ impl Contour {
     }
 
     /// Returns the [`Distance`] to the provided point.
-    pub fn distance(&self, point: Vector2) -> Distance {
+    pub fn distance(&self, point: Vector2<f32>) -> Distance {
         self.segments
             .iter()
             .map(|segment| segment.distance(point))
@@ -114,7 +114,7 @@ pub enum Segment {
 }
 
 impl Segment {
-    fn distance(&self, point: Vector2) -> Distance {
+    fn distance(&self, point: Vector2<f32>) -> Distance {
         match self {
             Segment::Line(l) => l.calculate_distance(point),
             Segment::Quadratic(q) => q.calculate_distance(point),
@@ -125,31 +125,31 @@ impl Segment {
 
 #[derive(Copy, Clone, Debug)]
 pub struct Line {
-    pub from: Vector2,
-    pub to: Vector2,
+    pub from: Vector2<f32>,
+    pub to: Vector2<f32>,
 }
 
 #[derive(Copy, Clone, Debug)]
 pub struct Quad {
-    pub from: Vector2,
-    pub ctrl: Vector2,
-    pub to: Vector2,
+    pub from: Vector2<f32>,
+    pub ctrl: Vector2<f32>,
+    pub to: Vector2<f32>,
 }
 
 #[derive(Copy, Clone, Debug)]
 pub struct Curve {
-    pub from: Vector2,
-    pub ctrl1: Vector2,
-    pub ctrl2: Vector2,
-    pub to: Vector2,
+    pub from: Vector2<f32>,
+    pub ctrl1: Vector2<f32>,
+    pub ctrl2: Vector2<f32>,
+    pub to: Vector2<f32>,
 }
 
 impl Line {
-    pub fn new(from: Vector2, to: Vector2) -> Self {
+    pub fn new(from: Vector2<f32>, to: Vector2<f32>) -> Self {
         Self { from, to }
     }
 
-    pub fn calculate_distance(&self, point: Vector2) -> Distance {
+    pub fn calculate_distance(&self, point: Vector2<f32>) -> Distance {
         crate::math::line_signed_distance(*self, point)
     }
 
@@ -161,11 +161,11 @@ impl Line {
 }
 
 impl Quad {
-    pub fn new(from: Vector2, ctrl: Vector2, to: Vector2) -> Self {
+    pub fn new(from: Vector2<f32>, ctrl: Vector2<f32>, to: Vector2<f32>) -> Self {
         Self { from, ctrl, to }
     }
 
-    pub fn calculate_distance(&self, point: Vector2) -> Distance {
+    pub fn calculate_distance(&self, point: Vector2<f32>) -> Distance {
         crate::math::quad_signed_distance(*self, point)
     }
 
@@ -177,7 +177,7 @@ impl Quad {
 }
 
 impl Curve {
-    pub fn new(from: Vector2, ctrl1: Vector2, ctrl2: Vector2, to: Vector2) -> Self {
+    pub fn new(from: Vector2<f32>, ctrl1: Vector2<f32>, ctrl2: Vector2<f32>, to: Vector2<f32>) -> Self {
         Self {
             from,
             ctrl1,
@@ -187,7 +187,7 @@ impl Curve {
     }
 
     #[inline]
-    pub fn calculate_distance(&self, point: Vector2) -> Distance {
+    pub fn calculate_distance(&self, point: Vector2<f32>) -> Distance {
         unimplemented!()
     }
 

@@ -1,9 +1,8 @@
 use image::{DynamicImage, GenericImage, Rgba};
-use msdfont::{PathBuilder, GlyphOutline, Scale, BBox, Vector2};
+use msdfont::{PathBuilder, GlyphOutline, BBox, Vector2};
 
 fn main() {
-    let scale = Scale(10.0);
-    let mut builder = PathBuilder::new_with_scale(scale);
+    let mut builder = PathBuilder::new();
     builder.open_at(-5.0, 5.0);
     builder.line_to(10.0, 5.0);
     builder.line_to(10.0, 0.0);
@@ -15,8 +14,7 @@ fn main() {
     // TODO resolve this case!
     let shape = builder.build_shape();
 
-    let mut bbox = BBox::new(Vector2::new(-5.0, 10.0), Vector2::new(10.0, 0.0));
-    bbox.resize(scale);
+    let bbox = BBox::new(Vector2::new(-5, 10), Vector2::new(10, 0));
 
     let glyph = GlyphOutline::from_shape(shape, bbox);
 

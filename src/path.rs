@@ -1,8 +1,6 @@
 use rusttype::OutlineBuilder;
 
-use crate::Scale;
 use crate::shape::{Contour, Curve, Line, Quad, Segment, Winding, Shape};
-use crate::font::{NormScale};
 use crate::vector::Vector2;
 
 /// `PathBuilder` (aka. `ShapeBuilder`) builds a path from five opentype font instructions:
@@ -20,7 +18,7 @@ pub struct PathBuilder {
 
     // Temporary values
     shoelace: f32,
-    last_point: Option<Vector2>,
+    last_point: Option<Vector2<f32>>,
     temp_segments: Vec<Segment>,
 }
 

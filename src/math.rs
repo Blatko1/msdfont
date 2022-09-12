@@ -61,7 +61,7 @@ impl PartialOrd for Distance {
     }
 }
 
-pub fn line_signed_distance(line: Line, point: Vector2) -> Distance {
+pub fn line_signed_distance(line: Line, point: Vector2<f32>) -> Distance {
     let p0 = line.from;
     let p1 = line.to;
     let p = point;
@@ -103,7 +103,7 @@ pub fn line_signed_distance(line: Line, point: Vector2) -> Distance {
     }
 }
 
-pub fn quad_signed_distance(quad: Quad, point: Vector2) -> Distance {
+pub fn quad_signed_distance(quad: Quad, point: Vector2<f32>) -> Distance {
     let p0 = quad.from;
     let p1 = quad.ctrl;
     let p2 = quad.to;
@@ -254,11 +254,11 @@ fn cubic_roots(a: f32, b: f32, c: f32, d: f32) -> [Option<f32>; 3] {
 /// Procedure explained at:
 /// https://web.archive.org/web/20121001232059/http://paulbourke.net/geometry/lineline2d/
 pub fn line_line_intersection(
-    p0: Vector2,
-    p1: Vector2,
-    p2: Vector2,
-    p3: Vector2,
-) -> Option<Vector2> {
+    p0: Vector2<f32>,
+    p1: Vector2<f32>,
+    p2: Vector2<f32>,
+    p3: Vector2<f32>,
+) -> Option<Vector2<f32>> {
     // TODO adapt this function with in mind that intersections will rarely happen
     let x0_x2 = p0.x - p2.x;
     let y0_y2 = p0.y - p2.y;
@@ -300,12 +300,12 @@ pub fn line_line_intersection(
 /// https://www.particleincell.com/2013/cubic-line-intersection/
 /// https://stackoverflow.com/questions/50129580/program-to-find-line-segment-and-bezier-curve-intersection
 pub fn quad_line_intersection(
-    q0: Vector2,
-    q1: Vector2,
-    q2: Vector2,
-    l0: Vector2,
-    l1: Vector2,
-) -> [Option<Vector2>; 2] {
+    q0: Vector2<f32>,
+    q1: Vector2<f32>,
+    q2: Vector2<f32>,
+    l0: Vector2<f32>,
+    l1: Vector2<f32>,
+) -> [Option<Vector2<f32>>; 2] {
     let mut intersections = [None; 2];
     let a = (q0 + q2 - 2.0 * q1).cross(l1 - l0);
     let b = 2.0 * (q1 - q0).cross(l1 - l0);
@@ -334,50 +334,50 @@ pub fn quad_line_intersection(
 }
 
 pub fn quad_quad_intersection(
-    a0: Vector2,
-    a1: Vector2,
-    a2: Vector2,
-    b0: Vector2,
-    b1: Vector2,
-    b2: Vector2,
-) -> [Option<Vector2>; 4] {
+    a0: Vector2<f32>,
+    a1: Vector2<f32>,
+    a2: Vector2<f32>,
+    b0: Vector2<f32>,
+    b1: Vector2<f32>,
+    b2: Vector2<f32>,
+) -> [Option<Vector2<f32>>; 4] {
     // TODO this
     [None, None, None, None]
 }
 
 pub fn cubic_line_intersection(
-    c0: Vector2,
-    c1: Vector2,
-    c2: Vector2,
-    c3: Vector2,
-    l0: Vector2,
-    l1: Vector2,
-) -> [Option<Vector2>; 3] {
+    c0: Vector2<f32>,
+    c1: Vector2<f32>,
+    c2: Vector2<f32>,
+    c3: Vector2<f32>,
+    l0: Vector2<f32>,
+    l1: Vector2<f32>,
+) -> [Option<Vector2<f32>>; 3] {
     todo!()
 }
 
 pub fn cubic_quad_intersection(
-    c0: Vector2,
-    c1: Vector2,
-    c2: Vector2,
-    c3: Vector2,
-    q0: Vector2,
-    q1: Vector2,
-    q2: Vector2,
-) -> [Option<Vector2>; 6] {
+    c0: Vector2<f32>,
+    c1: Vector2<f32>,
+    c2: Vector2<f32>,
+    c3: Vector2<f32>,
+    q0: Vector2<f32>,
+    q1: Vector2<f32>,
+    q2: Vector2<f32>,
+) -> [Option<Vector2<f32>>; 6] {
     todo!()
 }
 
 pub fn cubic_cubic_intersection(
-    a0: Vector2,
-    a1: Vector2,
-    a2: Vector2,
-    a3: Vector2,
-    b0: Vector2,
-    b1: Vector2,
-    b2: Vector2,
-    b3: Vector2,
-) -> [Option<Vector2>; 9] {
+    a0: Vector2<f32>,
+    a1: Vector2<f32>,
+    a2: Vector2<f32>,
+    a3: Vector2<f32>,
+    b0: Vector2<f32>,
+    b1: Vector2<f32>,
+    b2: Vector2<f32>,
+    b3: Vector2<f32>,
+) -> [Option<Vector2<f32>>; 9] {
     todo!()
 }
 
@@ -387,7 +387,7 @@ pub fn cubic_cubic_intersection(
 /// - `t` - function parameter
 // TODO maybe convert to macro!
 #[inline]
-pub fn line_fn(p0: Vector2, p1: Vector2, t: f32) -> Vector2 {
+pub fn line_fn(p0: Vector2<f32>, p1: Vector2<f32>, t: f32) -> Vector2<f32> {
     p0 + t * (p1 - p0)
 }
 
@@ -398,7 +398,7 @@ pub fn line_fn(p0: Vector2, p1: Vector2, t: f32) -> Vector2 {
 /// - `t` - function parameter
 // TODO maybe convert to macro!
 #[inline]
-pub fn quadratic_fn(p0: Vector2, p1: Vector2, p2: Vector2, t: f32) -> Vector2 {
+pub fn quadratic_fn(p0: Vector2<f32>, p1: Vector2<f32>, p2: Vector2<f32>, t: f32) -> Vector2<f32> {
     p0 + 2.0 * t * (p1 - p0) + t * t * (p2 - 2.0 * p1 + p0)
 }
 

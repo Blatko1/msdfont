@@ -18,11 +18,11 @@ pub fn gen_sdf(outline: GlyphOutline, range: usize) -> Bitmap {
     let height = outline.height();
     let mut data = Vec::new();
     println!("width: {}, height: {}", width, height);
-    for y in 0..height as usize {
-        for x in 0..width as usize {
+    for y in 0..height {
+        for x in 0..width {
             let pixel = Vector2::new(x as f32 + 0.5, y as f32 + 0.5);
 
-            let signed_distance = - shortest_distance(&shape, pixel).real_signed();
+            let signed_distance = shortest_distance(&shape, pixel).real_signed();
 
             let normalized = (signed_distance / range as f32) + 0.5;
 
@@ -71,7 +71,7 @@ pub fn gen_pseudo_sdf(outline: GlyphOutline, range: usize) -> Bitmap {
 }
 
 /// Returns [`Distance`]
-fn shortest_distance(shape: &Shape, pixel: Vector2) -> Distance {
+fn shortest_distance(shape: &Shape, pixel: Vector2<f32>) -> Distance {
     shape
         .iter()
         .map(|contour| contour.distance(pixel))
