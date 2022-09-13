@@ -12,7 +12,7 @@ impl Bitmap {
     }
 }
 
-pub fn gen_sdf(outline: GlyphOutline, range: usize) -> Bitmap {
+pub fn gen_sdf(outline: &GlyphOutline, range: usize) -> Bitmap {
     let shape = &outline.shape;
     let width = outline.width();
     let height = outline.height();
@@ -41,7 +41,7 @@ pub fn gen_sdf(outline: GlyphOutline, range: usize) -> Bitmap {
     }
 }
 
-pub fn gen_pseudo_sdf(outline: GlyphOutline, range: usize) -> Bitmap {
+pub fn gen_pseudo_sdf(outline: &GlyphOutline, range: usize) -> Bitmap {
     let shape = &outline.shape;
     let width = outline.width();
     let height = outline.height();

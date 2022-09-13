@@ -1,6 +1,6 @@
 use std::{sync::Arc};
 
-use rusttype::{Font as RTFont, Glyph as RTGlyph, VMetrics, Rect};
+use rusttype::{Font as RTFont, Glyph as RTGlyph, VMetrics, Rect, Scale};
 
 use crate::{
     gen::Bitmap,
@@ -40,16 +40,24 @@ impl<'a> Font<'a> {
         let glyph = self.inner.glyph(id.into());
         // let font = Arc::clone(&self.inner);
 
-        Glyph { inner: glyph, units_per_em: self.units_per_em() }
+        Glyph { inner: glyph }
     }
 }
 
 pub struct Glyph<'font> {
     inner: RTGlyph<'font>,
-    units_per_em: u16,
 }
 
 impl Glyph<'_> {
+
+    /// The glyph identifier for this glyph.
+    pub fn id(&self) -> u16 {
+        self.inner.id().0
+    }
+
+    /// Builds a [`GlyphOutline`] with the provided scale.
+    /// 
+    /// Scale is automatically normalized by the `units_per_em` factor.
     pub fn build(self, scale: Scale) -> GlyphOutline {
         let mut builder = PathBuilder::new();
         
@@ -64,7 +72,7 @@ impl Glyph<'_> {
 
         let shape = builder.build_shape();
 
-        GlyphOutline { bbox, shape }
+        GlyphOutline::from_shape(shape, bbox)
     }
 }
 
@@ -75,27 +83,31 @@ pub struct GlyphOutline {
 
 impl GlyphOutline {
 
+    /// Initialize a new [`GlyphOutline`] with the provided shape and it's 
+    /// bounding box.
+    /// 
+    /// Use the [`Self::generate`] functions to create a distance field bitmap.
     pub fn from_shape(shape: Shape, bbox: BBox) -> Self {
         Self { bbox, shape }
     }
 
-    /// Consumes the [`Glyph`] and returns a image bitmap with
-    /// signed distance fields.
-    pub fn generate_sdf(self, range: usize) -> Bitmap {
+    /// Returns a image bitmap with signed distance fields.
+    pub fn generate_sdf(&self, range: usize) -> Bitmap {
         crate::gen::gen_sdf(self, range)
     }
 
-    /// Consumes the [`Glyph`] and returns a image bitmap with
-    /// pseudo signed distance fields.
-    pub fn generate_pseudo_sdf(self, range: usize) -> Bitmap {
+    /// Returns a image bitmap with pseudo signed distance fields.
+    pub fn generate_pseudo_sdf(&self, range: usize) -> Bitmap {
         crate::gen::gen_pseudo_sdf(self, range)
     }
 
+    /// Returns the width of the shape's bounding box.
     #[inline]
     pub fn width(&self) -> i32 {
         self.bbox.width()
     }
 
+    /// Returns the height of the shape's bounding box.
     #[inline]
     pub fn height(&self) -> i32 {
         self.bbox.height()
@@ -118,11 +130,6 @@ impl BBox {
         }
     }
 
-    // pub fn resize(&mut self, scale: Scale) {
-    //     self.tl = self.tl * scale;
-    //     self.br = self.br * scale;
-    // }
-
     #[inline]
     pub fn width(&self) -> i32 {
         self.br.x - self.tl.x
@@ -131,7 +138,7 @@ impl BBox {
     // TODO maybe fix
     #[inline]
     pub fn height(&self) -> i32 {
-        // inverted because 
+        // y increases downwards
         self.br.y - self.tl.y
     }
 }
@@ -145,21 +152,31 @@ impl From<Rect<i32>> for BBox {
     }
 }
 
-// TODO maybe use x and y scale factors
-#[derive(Debug, Clone, Copy)]
-pub struct Scale(pub f32);
+// TODO is needed?? /// Used for scaling glyphs and getting the desired output dimensions.
+// #[derive(Debug, Clone, Copy)]
+// pub struct Scale {
+//     x: f32,
+//     y: f32
+// }
+// 
+// impl Scale {
+//     pub fn new(x: f32, y: f32) -> Self {
+//         Self {
+//             x,
+//             y,
+//         }
+//     }
+// 
+//     pub fn uniform(scale: f32) -> Self {
+//         Self { x: scale, y: scale }
+//     }
+// }
 
-impl Scale {
-    pub fn new(scale: f32) -> Self {
-        Self(scale)
-    }
-}
-
-impl Into<rusttype::Scale> for Scale {
-    fn into(self) -> rusttype::Scale {
-        rusttype::Scale::uniform(self.0)
-    }
-}
+// impl Into<rusttype::Scale> for Scale {
+//     fn into(self) -> rusttype::Scale {
+//         rusttype::Scale { x: self.x, y: self.y }
+//     }
+// }
 
 //// Represents a normalized scale which is used for
 //// scaling the glyph in the build process.

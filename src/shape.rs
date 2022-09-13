@@ -222,19 +222,3 @@ impl Winding {
         !self.is_cw()
     }
 }
-// TODO maybe needed in future
-// #[derive(Debug, Clone, Copy)]
-// pub struct BoundBox {
-//     /// Top left point.
-//     pub tl: Vector2,
-//
-//     /// Bottom right point.
-//     pub br: Vector2,
-// }
-//
-// impl BoundBox {
-//     const ZERO: BoundBox = BoundBox {
-//         tl: Vector2::ZERO,
-//         br: Vector2::ZERO,
-//     };
-// }

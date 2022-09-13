@@ -8,6 +8,6 @@ mod vector;
 
 pub use path::PathBuilder;
 pub use font::*;
-pub use rusttype::VMetrics;
+pub use rusttype::{VMetrics, Scale};
 
 pub use crate::vector::Vector2;
