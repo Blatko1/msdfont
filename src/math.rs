@@ -52,7 +52,9 @@ impl PartialOrd for Distance {
             Some(Ordering::Less) => {
                 other.orthogonality.partial_cmp(&self.orthogonality)
             }
-            Some(Ordering::Greater) => self.real_dist.partial_cmp(&other.real_dist),
+            Some(Ordering::Greater) => {
+                self.real_dist.partial_cmp(&other.real_dist)
+            }
             Some(Ordering::Equal) => {
                 other.orthogonality.partial_cmp(&self.orthogonality)
             }
@@ -398,7 +400,12 @@ pub fn line_fn(p0: Vector2<f32>, p1: Vector2<f32>, t: f32) -> Vector2<f32> {
 /// - `t` - function parameter
 // TODO maybe convert to macro!
 #[inline]
-pub fn quadratic_fn(p0: Vector2<f32>, p1: Vector2<f32>, p2: Vector2<f32>, t: f32) -> Vector2<f32> {
+pub fn quadratic_fn(
+    p0: Vector2<f32>,
+    p1: Vector2<f32>,
+    p2: Vector2<f32>,
+    t: f32,
+) -> Vector2<f32> {
     p0 + 2.0 * t * (p1 - p0) + t * t * (p2 - 2.0 * p1 + p0)
 }
 

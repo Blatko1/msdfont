@@ -1,4 +1,6 @@
-use crate::{font::GlyphOutline, math::Distance, shape::Shape, vector::Vector2};
+use crate::{
+    font::GlyphOutline, math::Distance, shape::Shape, vector::Vector2,
+};
 
 pub struct Bitmap {
     data: Vec<u8>,
@@ -22,7 +24,8 @@ pub fn gen_sdf(outline: &GlyphOutline, range: usize) -> Bitmap {
         for x in 0..width {
             let pixel = Vector2::new(x as f32 + 0.5, y as f32 + 0.5);
 
-            let signed_distance = shortest_distance(&shape, pixel).real_signed();
+            let signed_distance =
+                shortest_distance(&shape, pixel).real_signed();
 
             let normalized = (signed_distance / range as f32) + 0.5;
 
@@ -51,7 +54,8 @@ pub fn gen_pseudo_sdf(outline: &GlyphOutline, range: usize) -> Bitmap {
         for x in 0..width as usize {
             let pixel = Vector2::new(x as f32 + 0.5, y as f32 + 0.5);
 
-            let signed_distance = shortest_distance(&shape, pixel).real_signed();
+            let signed_distance =
+                shortest_distance(&shape, pixel).real_signed();
 
             let normalized = (signed_distance / range as f32) + 0.5;
 
@@ -72,7 +76,7 @@ pub fn gen_pseudo_sdf(outline: &GlyphOutline, range: usize) -> Bitmap {
 
 /// Returns [`Distance`]
 fn shortest_distance(shape: &Shape, pixel: Vector2<f32>) -> Distance {
-    shape
+    shape.contours
         .iter()
         .map(|contour| contour.distance(pixel))
         .min_by(|a, b| a.partial_cmp(b).unwrap())

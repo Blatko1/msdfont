@@ -1,7 +1,8 @@
-use rusttype::OutlineBuilder;
+use rusttype::{OutlineBuilder, Scale};
 
-use crate::shape::{Contour, Curve, Line, Quad, Segment, Winding, Shape};
+use crate::shape::{Contour, Curve, Line, Quad, Segment, Shape, Winding};
 use crate::vector::Vector2;
+use crate::BBox;
 
 /// `PathBuilder` (aka. `ShapeBuilder`) builds a path from five opentype font instructions:
 /// - `move_to`
@@ -9,7 +10,7 @@ use crate::vector::Vector2;
 /// - `quad_to`
 /// - `curve_to`
 /// - `close`
-/// 
+///
 /// After processing all instructions a shape can easily be created.
 #[derive(Debug)]
 pub struct PathBuilder {
@@ -156,12 +157,31 @@ impl PathBuilder {
         );
     }
 
-    // TODO add checks if last contour was closed
     pub fn build_shape(self) -> Shape {
-        assert!(!self.contours.is_empty(), "PathBuilder Error: There are no contours.");
-        assert!(self.last_point.is_none(), "PathBuilder Error: The last contour is still open.");
+        assert!(
+            !self.contours.is_empty(),
+            "PathBuilder Error: There are no contours."
+        );
+        assert!(
+            self.last_point.is_none(),
+            "PathBuilder Error: The last contour is still open."
+        );
 
         Shape::new(self.contours)
+    }
+
+    pub fn build_shape_scaled(mut self, scale: Scale) -> Shape {
+        for contour in self.contours.iter_mut() {
+            for segment in contour.segments.iter_mut() {
+                match segment {
+                    Segment::Line(l) => l.rescale(scale),
+                    Segment::Quadratic(q) => q.rescale(scale),
+                    Segment::Cubic(c) => c.rescale(scale),
+                }
+            }
+        }
+
+        self.build_shape()
     }
 }
 
@@ -204,6 +224,65 @@ impl OutlineBuilder for PathBuilder {
         //println!("_________END_________");
 
         self.close();
+    }
+}
+
+pub struct ShapeBuilder {
+    path: PathBuilder,
+    bbox: BBox,
+    scale: Option<Scale>
+}
+
+impl ShapeBuilder {
+    pub fn new(width: u32, height: u32, scale: Option<Scale>) -> Self {
+        let builder = PathBuilder::new();
+        let bbox = BBox::new(
+                Vector2::ZERO_I32,
+                Vector2::new(width as i32, height as i32),
+            );
+        Self {
+            path: builder,
+            bbox,
+            scale,
+        }
+    }
+
+    pub fn open_at(&mut self, x: f32, y: f32) {
+        self.path.open_at(x, y);
+    }
+
+    pub fn line_to(&mut self, x: f32, y: f32) {
+        self.path.line_to(x, y);
+    }
+
+    pub fn quad_to(&mut self, ctrl_x: f32, ctrl_y: f32, x: f32, y: f32) {
+        self.path.quad_to(ctrl_x, ctrl_y, x, y);
+    }
+
+    pub fn curve_to(
+        &mut self,
+        ctrl1_x: f32,
+        ctrl1_y: f32,
+        ctrl2_x: f32,
+        ctrl2_y: f32,
+        x: f32,
+        y: f32,
+    ) {
+        self.path.curve_to(ctrl1_x, ctrl1_y, ctrl2_x, ctrl2_y, x, y);
+    }
+
+    pub fn close(&mut self) {
+        self.path.close();
+    }
+
+    pub fn build(mut self) -> (Shape, BBox) {
+        if let Some(scale) = self.scale {
+            self.bbox.scale(scale);
+            (self.path.build_shape_scaled(scale), self.bbox)
+        }
+        else {
+            (self.path.build_shape(), self.bbox)
+        }
     }
 }
 

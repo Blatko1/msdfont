@@ -1,10 +1,12 @@
 use std::slice::Iter;
 
-use crate::{math::Distance, vector::Vector2, font::BBox};
+use rusttype::Scale;
+
+use crate::{font::BBox, math::Distance, vector::Vector2};
 
 #[derive(Debug)]
 pub struct Shape {
-    contours: Vec<Contour>,
+    pub contours: Vec<Contour>,
 }
 
 impl Shape {
@@ -13,11 +15,18 @@ impl Shape {
         Self { contours }
     }
 
-    /// Iterates over shape contours.
-    #[inline]
-    pub fn iter(&self) -> Iter<'_, Contour> {
-        self.contours.iter()
-    }
+    // TODO maybe change to [`Scale`].
+    // pub fn scale(&mut self, scale: f32) {
+    //     for contour in self.contours.iter_mut() {
+    //         for segment in contour.segments.iter_mut() {
+    //             match segment {
+    //                 Segment::Line(l) => l.rescale(scale),
+    //                 Segment::Quadratic(q) => q.rescale(scale),
+    //                 Segment::Cubic(c) => c.rescale(scale),
+    //             }
+    //         }
+    //     }
+    // }
 
     /// Returns a bounding box which is created paying attention to
     /// line and curve points instead of their bodies.
@@ -34,7 +43,7 @@ impl Shape {
 
                         y_iter.push(l.from.y);
                         y_iter.push(l.to.y);
-                    },
+                    }
                     Segment::Quadratic(q) => {
                         x_iter.push(q.from.x);
                         x_iter.push(q.ctrl.x);
@@ -43,7 +52,7 @@ impl Shape {
                         y_iter.push(q.from.y);
                         y_iter.push(q.ctrl.y);
                         y_iter.push(q.to.y);
-                    },
+                    }
                     Segment::Cubic(c) => {
                         x_iter.push(c.from.x);
                         x_iter.push(c.ctrl1.x);
@@ -54,23 +63,38 @@ impl Shape {
                         y_iter.push(c.ctrl1.y);
                         y_iter.push(c.ctrl2.y);
                         y_iter.push(c.to.y);
-                    },
+                    }
                 }
             }
         }
         // Highest y point of the shape.
-        let top = *y_iter.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).expect("No segments? Impossible!") as i32;
-        let bottom = *y_iter.iter().min_by(|a, b| a.partial_cmp(b).unwrap()).expect("No segments? Impossible!") as i32;
-        let left = *x_iter.iter().min_by(|a, b| a.partial_cmp(b).unwrap()).expect("No segments? Impossible!") as i32;
-        let right = *x_iter.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).expect("No segments? Impossible!") as i32;
+        let top = *y_iter
+            .iter()
+            .max_by(|a, b| a.partial_cmp(b).unwrap())
+            .expect("No segments? Impossible!") as i32;
+        let bottom = *y_iter
+            .iter()
+            .min_by(|a, b| a.partial_cmp(b).unwrap())
+            .expect("No segments? Impossible!") as i32;
+        let left = *x_iter
+            .iter()
+            .min_by(|a, b| a.partial_cmp(b).unwrap())
+            .expect("No segments? Impossible!") as i32;
+        let right = *x_iter
+            .iter()
+            .max_by(|a, b| a.partial_cmp(b).unwrap())
+            .expect("No segments? Impossible!") as i32;
 
-        BBox { tl: Vector2::new(left, top), br: Vector2::new(right, bottom) }
+        BBox {
+            tl: Vector2::new(left, top),
+            br: Vector2::new(right, bottom),
+        }
     }
 }
 
 #[derive(Debug)]
 pub struct Contour {
-    segments: Vec<Segment>,
+    pub segments: Vec<Segment>,
     winding: Winding,
 }
 
@@ -149,6 +173,12 @@ impl Line {
         Self { from, to }
     }
 
+    // TODO maybe 
+    pub fn rescale(&mut self, scale: Scale) {
+        self.from *= scale;
+        self.to *= scale;
+    }
+
     pub fn calculate_distance(&self, point: Vector2<f32>) -> Distance {
         crate::math::line_signed_distance(*self, point)
     }
@@ -161,8 +191,18 @@ impl Line {
 }
 
 impl Quad {
-    pub fn new(from: Vector2<f32>, ctrl: Vector2<f32>, to: Vector2<f32>) -> Self {
+    pub fn new(
+        from: Vector2<f32>,
+        ctrl: Vector2<f32>,
+        to: Vector2<f32>,
+    ) -> Self {
         Self { from, ctrl, to }
+    }
+
+    pub fn rescale(&mut self, scale: Scale) {
+        self.from *= scale;
+        self.ctrl *= scale;
+        self.to *= scale;
     }
 
     pub fn calculate_distance(&self, point: Vector2<f32>) -> Distance {
@@ -177,13 +217,25 @@ impl Quad {
 }
 
 impl Curve {
-    pub fn new(from: Vector2<f32>, ctrl1: Vector2<f32>, ctrl2: Vector2<f32>, to: Vector2<f32>) -> Self {
+    pub fn new(
+        from: Vector2<f32>,
+        ctrl1: Vector2<f32>,
+        ctrl2: Vector2<f32>,
+        to: Vector2<f32>,
+    ) -> Self {
         Self {
             from,
             ctrl1,
             ctrl2,
             to,
         }
+    }
+
+    pub fn rescale(&mut self, scale: Scale) {
+        self.from *= scale;
+        self.ctrl1 *= scale;
+        self.ctrl2 *= scale;
+        self.to *= scale;
     }
 
     #[inline]

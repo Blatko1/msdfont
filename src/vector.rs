@@ -1,6 +1,7 @@
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, Div, Mul, Neg, Sub, MulAssign};
 
-use num_traits::{Num, real::Real};
+use num_traits::{real::Real, Num};
+use rusttype::Scale;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Vector2<N: Num> {
@@ -8,10 +9,14 @@ pub struct Vector2<N: Num> {
     pub y: N,
 }
 
-impl<N: Num> Vector2<N> {
+// I don't know any other ways to make consts usable for any generic
+impl Vector2<f32> {
     pub const ZERO_F32: Vector2<f32> = Vector2 { x: 0.0, y: 0.0 };
     pub const ZERO_I32: Vector2<i32> = Vector2 { x: 0, y: 0 };
+    pub const ZERO_U32: Vector2<u32> = Vector2 { x: 0, y: 0 };
+}
 
+impl<N: Num> Vector2<N> {
     #[inline]
     pub fn new(x: N, y: N) -> Self {
         Vector2 { x, y }
@@ -52,7 +57,10 @@ impl<N: Real> Vector2<N> {
     #[inline]
     pub fn normalize(self) -> Self {
         let mag = self.magnitude();
-        assert!(!mag.is_zero(), "Math Error: Failed at normalizing 0 length vector.");
+        assert!(
+            !mag.is_zero(),
+            "Math Error: Failed at normalizing 0 length vector."
+        );
         self * (mag.recip())
     }
 }
@@ -124,6 +132,28 @@ impl<N: Num + std::ops::Neg<Output = N>> Neg for Vector2<N> {
     #[inline]
     fn neg(self) -> Self::Output {
         Vector2::new(-self.x, -self.y)
+    }
+}
+
+impl Mul<Scale> for Vector2<f32> {
+    type Output = Vector2<f32>;
+
+    fn mul(self, rhs: Scale) -> Self::Output {
+        Vector2::new(self.x * rhs.x, self.y * rhs.y)
+    }
+}
+
+impl MulAssign<Scale> for Vector2<f32> {
+    fn mul_assign(&mut self, rhs: Scale) {
+        self.x *= rhs.x;
+        self.y *= rhs.y;
+    }
+}
+
+impl<N: Num + MulAssign + Copy> MulAssign<N> for Vector2<N> {
+    fn mul_assign(&mut self, rhs: N) {
+        self.x *= rhs;
+        self.y *= rhs;
     }
 }
 

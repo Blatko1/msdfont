@@ -1,13 +1,13 @@
-mod shape;
 mod font;
 mod gen;
 mod math;
 mod overlaps;
 mod path;
+mod shape;
 mod vector;
 
-pub use path::PathBuilder;
 pub use font::*;
-pub use rusttype::{VMetrics, Scale};
+pub use path::ShapeBuilder;
+pub use vector::Vector2;
 
-pub use crate::vector::Vector2;
+pub use rusttype::{Scale, VMetrics};

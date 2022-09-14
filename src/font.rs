@@ -1,12 +1,8 @@
-use std::{sync::Arc};
+use std::sync::Arc;
 
-use rusttype::{Font as RTFont, Glyph as RTGlyph, VMetrics, Rect, Scale};
+use rusttype::{Font as RTFont, Glyph as RTGlyph, Rect, Scale, VMetrics};
 
-use crate::{
-    gen::Bitmap,
-    path::{PathBuilder},
-    vector::Vector2, shape::Shape,
-};
+use crate::{gen::Bitmap, path::PathBuilder, shape::Shape, vector::Vector2};
 
 pub struct Font<'a> {
     inner: Arc<RTFont<'a>>,
@@ -49,18 +45,17 @@ pub struct Glyph<'font> {
 }
 
 impl Glyph<'_> {
-
     /// The glyph identifier for this glyph.
     pub fn id(&self) -> u16 {
         self.inner.id().0
     }
 
     /// Builds a [`GlyphOutline`] with the provided scale.
-    /// 
+    ///
     /// Scale is automatically normalized by the `units_per_em` factor.
     pub fn build(self, scale: Scale) -> GlyphOutline {
         let mut builder = PathBuilder::new();
-        
+
         let position = rusttype::Point { x: 0.0, y: 0.0 };
         let glyph = self.inner.scaled(scale.into()).positioned(position);
         let rect = glyph.pixel_bounding_box().unwrap();
@@ -82,10 +77,9 @@ pub struct GlyphOutline {
 }
 
 impl GlyphOutline {
-
-    /// Initialize a new [`GlyphOutline`] with the provided shape and it's 
+    /// Initialize a new [`GlyphOutline`] with the provided shape and it's
     /// bounding box.
-    /// 
+    ///
     /// Use the [`Self::generate`] functions to create a distance field bitmap.
     pub fn from_shape(shape: Shape, bbox: BBox) -> Self {
         Self { bbox, shape }
@@ -114,6 +108,13 @@ impl GlyphOutline {
     }
 }
 
+/// `Bounding box` represents an imaginary rectangle.
+///
+/// - `tl` - represents the top left point of the rectangle
+/// - `br` - represents the top left point of the rectangle
+///
+/// [`BBox`] implies that the uv coordinate system is used meaning
+/// y coordinate increases downwards.
 #[derive(Debug, Clone, Copy)]
 pub struct BBox {
     /// Top left point.
@@ -124,10 +125,14 @@ pub struct BBox {
 
 impl BBox {
     pub fn new(tl: Vector2<i32>, br: Vector2<i32>) -> Self {
-        Self {
-            tl,
-            br,
-        }
+        Self { tl, br }
+    }
+
+    pub fn scale(&mut self, scale: Scale) {
+        self.tl.x *= scale.x.ceil() as i32;
+        self.tl.y *= scale.y.ceil() as i32;
+        self.br.x *= scale.x.ceil() as i32;
+        self.br.y *= scale.y.ceil() as i32;
     }
 
     #[inline]
@@ -158,7 +163,7 @@ impl From<Rect<i32>> for BBox {
 //     x: f32,
 //     y: f32
 // }
-// 
+//
 // impl Scale {
 //     pub fn new(x: f32, y: f32) -> Self {
 //         Self {
@@ -166,7 +171,7 @@ impl From<Rect<i32>> for BBox {
 //             y,
 //         }
 //     }
-// 
+//
 //     pub fn uniform(scale: f32) -> Self {
 //         Self { x: scale, y: scale }
 //     }
@@ -180,40 +185,40 @@ impl From<Rect<i32>> for BBox {
 
 //// Represents a normalized scale which is used for
 //// scaling the glyph in the build process.
-//// 
+////
 //// Normalized means that the scale has already been divided by
 //// the units_per_em factor which each font has.
 //// // TODO should scale field be public?
 // #[derive(Debug, Clone, Copy)]
 // pub struct NormScale(f32);
-// 
+//
 // impl Mul<f32> for NormScale {
 //     type Output = f32;
-// 
+//
 //     fn mul(self, rhs: f32) -> Self::Output {
 //         self.0 * rhs
 //     }
 // }
-// 
+//
 // impl Mul<NormScale> for f32 {
 //     type Output = f32;
-// 
+//
 //     fn mul(self, rhs: NormScale) -> Self::Output {
 //         self * rhs.0
 //     }
 // }
-// 
+//
 // impl Mul<Vector2> for NormScale {
 //     type Output = Vector2;
-// 
+//
 //     fn mul(self, rhs: Vector2) -> Self::Output {
 //         rhs * self.0
 //     }
 // }
-// 
+//
 // impl Mul<NormScale> for Vector2 {
 //     type Output = Vector2;
-// 
+//
 //     fn mul(self, rhs: NormScale) -> Self::Output {
 //         self * rhs.0
 //     }
@@ -224,10 +229,10 @@ impl From<Rect<i32>> for BBox {
 //     pub descent: f32,
 //     pub line_gap: f32,
 // }
-// 
+//
 // impl std::ops::Mul<f32> for VMetrics {
 //     type Output = VMetrics;
-// 
+//
 //     fn mul(self, rhs: f32) -> Self::Output {
 //         VMetrics {
 //             ascent: self.ascent * rhs,
