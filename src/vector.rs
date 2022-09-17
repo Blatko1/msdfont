@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Neg, Sub, MulAssign};
+use std::ops::{Add, Div, Mul, MulAssign, Neg, Sub};
 
 use num_traits::{real::Real, Num};
 use rusttype::Scale;
@@ -147,13 +147,6 @@ impl MulAssign<Scale> for Vector2<f32> {
     fn mul_assign(&mut self, rhs: Scale) {
         self.x *= rhs.x;
         self.y *= rhs.y;
-    }
-}
-
-impl<N: Num + MulAssign + Copy> MulAssign<N> for Vector2<N> {
-    fn mul_assign(&mut self, rhs: N) {
-        self.x *= rhs;
-        self.y *= rhs;
     }
 }
 

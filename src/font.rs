@@ -50,30 +50,38 @@ impl Glyph<'_> {
         self.inner.id().0
     }
 
-    /// Builds a [`GlyphOutline`] with the provided scale.
+    /// Builds a [`GlyphOutline`] with the provided [`Scale`] and [`Offset`].
     ///
     /// Scale is automatically normalized by the `units_per_em` factor.
-    pub fn build(self, scale: Scale) -> GlyphOutline {
-        let mut builder = PathBuilder::new();
+    ///
+    /// Offset is mainly used in the sdf generation process for better view
+    /// of the glyph. It adds empty space to the left, right, top or bottom
+    /// of the outline .
+    pub fn build(self, scale: Scale, offset: Offset) -> GlyphOutline {
+        // Offset the shape to the right and the bottom
+        let pos = rusttype::Point {
+            x: offset.x,
+            y: offset.y,
+        };
+        let glyph = self.inner.scaled(scale.into()).positioned(pos);
+        let mut builder = PathBuilder::new(offset);
+        
+        let bbox = BBox::from(glyph.pixel_bounding_box().unwrap());
+        dbg!(bbox);
 
-        let position = rusttype::Point { x: 0.0, y: 0.0 };
-        let glyph = self.inner.scaled(scale.into()).positioned(position);
-        let rect = glyph.pixel_bounding_box().unwrap();
         let result = glyph.build_outline(&mut builder);
         assert!(result, "Glyph outline error!");
 
-        let bbox = BBox::from(rect);
-        dbg!(bbox);
-
         let shape = builder.build_shape();
 
-        GlyphOutline::from_shape(shape, bbox)
+        GlyphOutline::from_shape(shape, bbox, offset)
     }
 }
 
 pub struct GlyphOutline {
     pub(crate) bbox: BBox,
     pub(crate) shape: Shape,
+    pub(crate) offset: Offset
 }
 
 impl GlyphOutline {
@@ -81,8 +89,8 @@ impl GlyphOutline {
     /// bounding box.
     ///
     /// Use the [`Self::generate`] functions to create a distance field bitmap.
-    pub fn from_shape(shape: Shape, bbox: BBox) -> Self {
-        Self { bbox, shape }
+    pub fn from_shape(shape: Shape, bbox: BBox, offset: Offset) -> Self {
+        Self { bbox, shape, offset }
     }
 
     /// Returns a image bitmap with signed distance fields.
@@ -153,6 +161,24 @@ impl From<Rect<i32>> for BBox {
         BBox {
             tl: Vector2::new(rect.min.x, rect.min.y),
             br: Vector2::new(rect.max.x, rect.max.y),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Offset {
+    pub x: f32,
+    pub y: f32,
+}
+
+impl Offset {
+    pub fn new(x: f32, y: f32) -> Self {
+        Self { x, y }
+    }
+    pub fn uniform(offset: f32) -> Self {
+        Self {
+            x: offset,
+            y: offset,
         }
     }
 }

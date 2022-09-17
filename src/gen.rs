@@ -3,9 +3,9 @@ use crate::{
 };
 
 pub struct Bitmap {
-    data: Vec<u8>,
-    width: u32,
-    height: u32,
+    pub data: Vec<u8>,
+    pub width: u32,
+    pub height: u32,
 }
 
 impl Bitmap {
@@ -16,8 +16,8 @@ impl Bitmap {
 
 pub fn gen_sdf(outline: &GlyphOutline, range: usize) -> Bitmap {
     let shape = &outline.shape;
-    let width = outline.width();
-    let height = outline.height();
+    let width = outline.width() + outline.offset.x as i32 * 2;
+    let height = outline.height() + outline.offset.y as i32 * 2;
     let mut data = Vec::new();
     println!("width: {}, height: {}", width, height);
     for y in 0..height {
@@ -76,7 +76,8 @@ pub fn gen_pseudo_sdf(outline: &GlyphOutline, range: usize) -> Bitmap {
 
 /// Returns [`Distance`]
 fn shortest_distance(shape: &Shape, pixel: Vector2<f32>) -> Distance {
-    shape.contours
+    shape
+        .contours
         .iter()
         .map(|contour| contour.distance(pixel))
         .min_by(|a, b| a.partial_cmp(b).unwrap())

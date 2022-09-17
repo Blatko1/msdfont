@@ -1,5 +1,5 @@
 use image::{DynamicImage, GenericImage, Rgba};
-use msdfont::{BBox, GlyphOutline, Vector2, Scale, ShapeBuilder};
+use msdfont::{BBox, GlyphOutline, Scale, ShapeBuilder, Vector2};
 
 fn main() {
     let mut builder = ShapeBuilder::new(10, 10, Some(Scale::uniform(10.0)));

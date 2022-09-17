@@ -1,19 +1,20 @@
 use image::{DynamicImage, GenericImage, Rgba};
-use msdfont::{Font, Scale};
+use msdfont::{Font, Offset, Scale};
 
 fn main() {
     let data = include_bytes!("fonts/monserat.ttf");
 
     let font = Font::from_slice(data);
+    let glyph = font
+        .glyph('@')
+        .build(Scale::uniform(100.0), Offset::uniform(7.0));
 
-    let glyph = font.glyph('p').build(Scale::uniform(100.0));
-    let width = glyph.width() as u32;
-    let height = glyph.height() as u32;
-    let offset = 10;
+    let bitmap = glyph.generate_sdf(14);
+    let sdf = bitmap.data;
+    let width = bitmap.width;
+    let height = bitmap.height;
 
-    let sdf = glyph.generate_sdf(6).data();
-
-    let mut image = DynamicImage::new_rgb8(width + offset, height + offset);
+    let mut image = DynamicImage::new_rgb8(width, height);
 
     for y in 0..height {
         for x in 0..width {

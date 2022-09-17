@@ -173,7 +173,7 @@ impl Line {
         Self { from, to }
     }
 
-    // TODO maybe 
+    // TODO maybe
     pub fn rescale(&mut self, scale: Scale) {
         self.from *= scale;
         self.to *= scale;

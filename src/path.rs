@@ -2,7 +2,7 @@ use rusttype::{OutlineBuilder, Scale};
 
 use crate::shape::{Contour, Curve, Line, Quad, Segment, Shape, Winding};
 use crate::vector::Vector2;
-use crate::BBox;
+use crate::{BBox, Offset};
 
 /// `PathBuilder` (aka. `ShapeBuilder`) builds a path from five opentype font instructions:
 /// - `move_to`
@@ -15,6 +15,7 @@ use crate::BBox;
 #[derive(Debug)]
 pub struct PathBuilder {
     contours: Vec<Contour>,
+    offset: Offset,
     //scale: NormScale,
 
     // Temporary values
@@ -29,9 +30,10 @@ impl PathBuilder {
 
     /// Creates a new builder with scale set to `1` meaning none path instructions
     /// will be scaled. Use [`PathBuilder::new_with_scale`] for scaling.
-    pub fn new() -> Self {
+    pub fn new(offset: Offset) -> Self {
         Self {
             contours: Vec::new(),
+            offset,
 
             shoelace: 0.0,
             last_point: None,
@@ -42,7 +44,7 @@ impl PathBuilder {
     pub fn open_at(&mut self, x: f32, y: f32) {
         self.open_at_check();
 
-        let to = Vector2::new(x, y);
+        let to = Vector2::new(x + self.offset.x, y + self.offset.y);
         self.last_point = Some(to);
     }
 
@@ -50,7 +52,7 @@ impl PathBuilder {
         self.line_to_check();
 
         let from = self.last_point.unwrap();
-        let to = Vector2::new(x, y);
+        let to = Vector2::new(x + self.offset.x, y + self.offset.y);
         let line = Line::new(from, to);
 
         self.shoelace += line.shoelace();
@@ -62,8 +64,8 @@ impl PathBuilder {
         self.quad_to_check();
 
         let from = self.last_point.unwrap();
-        let control = Vector2::new(ctrl_x, ctrl_y);
-        let to = Vector2::new(x, y);
+        let control = Vector2::new(ctrl_x + self.offset.x, ctrl_y + self.offset.y);
+        let to = Vector2::new(x + self.offset.x, y + self.offset.y);
         let quad = Quad::new(from, control, to);
 
         self.shoelace += quad.shoelace();
@@ -84,9 +86,9 @@ impl PathBuilder {
         self.curve_to_check();
 
         let from = self.last_point.unwrap();
-        let ctrl1 = Vector2::new(ctrl1_x, ctrl1_y);
-        let ctrl2 = Vector2::new(ctrl2_x, ctrl2_y);
-        let to = Vector2::new(x, y);
+        let ctrl1 = Vector2::new(ctrl1_x + self.offset.x, ctrl1_y + self.offset.y);
+        let ctrl2 = Vector2::new(ctrl2_x + self.offset.x, ctrl2_y + self.offset.y);
+        let to = Vector2::new(x + self.offset.x, y + self.offset.y);
         let curve = Curve::new(from, ctrl1, ctrl2, to);
 
         self.shoelace += curve.shoelace();
@@ -187,7 +189,7 @@ impl PathBuilder {
 
 impl OutlineBuilder for PathBuilder {
     fn move_to(&mut self, x: f32, y: f32) {
-        //println!("moving to: {} {}", x, y);
+        println!("moving to: {} {}", x, y);
 
         self.open_at(x, y);
     }
@@ -230,16 +232,16 @@ impl OutlineBuilder for PathBuilder {
 pub struct ShapeBuilder {
     path: PathBuilder,
     bbox: BBox,
-    scale: Option<Scale>
+    scale: Option<Scale>,
 }
 
 impl ShapeBuilder {
-    pub fn new(width: u32, height: u32, scale: Option<Scale>) -> Self {
-        let builder = PathBuilder::new();
+    pub fn new(width: u32, height: u32, scale: Option<Scale>, offset: Offset) -> Self {
+        let builder = PathBuilder::new(offset);
         let bbox = BBox::new(
-                Vector2::ZERO_I32,
-                Vector2::new(width as i32, height as i32),
-            );
+            Vector2::ZERO_I32,
+            Vector2::new(width as i32, height as i32),
+        );
         Self {
             path: builder,
             bbox,
@@ -279,8 +281,7 @@ impl ShapeBuilder {
         if let Some(scale) = self.scale {
             self.bbox.scale(scale);
             (self.path.build_shape_scaled(scale), self.bbox)
-        }
-        else {
+        } else {
             (self.path.build_shape(), self.bbox)
         }
     }
