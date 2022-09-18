@@ -332,9 +332,10 @@ pub fn quad_line_intersection(
 
     //println!("roots: {:?}", quad_roots);
 
-    return intersections;
+    intersections
 }
 
+#[allow(dead_code)]
 pub fn quad_quad_intersection(
     a0: Vector2<f32>,
     a1: Vector2<f32>,
@@ -347,6 +348,7 @@ pub fn quad_quad_intersection(
     [None, None, None, None]
 }
 
+#[allow(dead_code)]
 pub fn cubic_line_intersection(
     c0: Vector2<f32>,
     c1: Vector2<f32>,
@@ -358,6 +360,7 @@ pub fn cubic_line_intersection(
     todo!()
 }
 
+#[allow(dead_code)]
 pub fn cubic_quad_intersection(
     c0: Vector2<f32>,
     c1: Vector2<f32>,
@@ -370,6 +373,7 @@ pub fn cubic_quad_intersection(
     todo!()
 }
 
+#[allow(dead_code)]
 pub fn cubic_cubic_intersection(
     a0: Vector2<f32>,
     a1: Vector2<f32>,
@@ -389,6 +393,7 @@ pub fn cubic_cubic_intersection(
 /// - `t` - function parameter
 // TODO maybe convert to macro!
 #[inline]
+#[allow(dead_code)]
 pub fn line_fn(p0: Vector2<f32>, p1: Vector2<f32>, t: f32) -> Vector2<f32> {
     p0 + t * (p1 - p0)
 }
@@ -400,6 +405,7 @@ pub fn line_fn(p0: Vector2<f32>, p1: Vector2<f32>, t: f32) -> Vector2<f32> {
 /// - `t` - function parameter
 // TODO maybe convert to macro!
 #[inline]
+#[allow(dead_code)]
 pub fn quadratic_fn(
     p0: Vector2<f32>,
     p1: Vector2<f32>,
@@ -510,11 +516,12 @@ fn cubic_root_test() {
     let b = -1.0;
     let c = -1.6;
     let d = 2.5;
-    let (_, discriminant, q, r) = test_find_cubic_roots(a, b, c, d);
+    let (_, discriminant, _q, _r) = test_find_cubic_roots(a, b, c, d);
 
     assert!(discriminant > 0.0);
 }
 
+#[allow(dead_code)]
 fn test_find_cubic_roots(
     _a: f32,
     _b: f32,

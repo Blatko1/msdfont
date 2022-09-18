@@ -258,14 +258,14 @@ impl Curve {
 ///
 /// If the winding is set to `false` the opposite is true
 /// meaning it creates cutouts.
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct Winding(pub bool);
 
 impl Winding {
     /// Checks if the winding is clockwise.
     #[inline]
     pub fn is_cw(&self) -> bool {
-        self.0 == true
+        self.0
     }
 
     /// Checks if the winding is counter clockwise.

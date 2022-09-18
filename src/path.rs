@@ -64,7 +64,8 @@ impl PathBuilder {
         self.quad_to_check();
 
         let from = self.last_point.unwrap();
-        let control = Vector2::new(ctrl_x + self.offset.x, ctrl_y + self.offset.y);
+        let control =
+            Vector2::new(ctrl_x + self.offset.x, ctrl_y + self.offset.y);
         let to = Vector2::new(x + self.offset.x, y + self.offset.y);
         let quad = Quad::new(from, control, to);
 
@@ -86,8 +87,10 @@ impl PathBuilder {
         self.curve_to_check();
 
         let from = self.last_point.unwrap();
-        let ctrl1 = Vector2::new(ctrl1_x + self.offset.x, ctrl1_y + self.offset.y);
-        let ctrl2 = Vector2::new(ctrl2_x + self.offset.x, ctrl2_y + self.offset.y);
+        let ctrl1 =
+            Vector2::new(ctrl1_x + self.offset.x, ctrl1_y + self.offset.y);
+        let ctrl2 =
+            Vector2::new(ctrl2_x + self.offset.x, ctrl2_y + self.offset.y);
         let to = Vector2::new(x + self.offset.x, y + self.offset.y);
         let curve = Curve::new(from, ctrl1, ctrl2, to);
 
@@ -236,7 +239,12 @@ pub struct ShapeBuilder {
 }
 
 impl ShapeBuilder {
-    pub fn new(width: u32, height: u32, scale: Option<Scale>, offset: Offset) -> Self {
+    pub fn new(
+        width: u32,
+        height: u32,
+        scale: Option<Scale>,
+        offset: Offset,
+    ) -> Self {
         let builder = PathBuilder::new(offset);
         let bbox = BBox::new(
             Vector2::ZERO_I32,

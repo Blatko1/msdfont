@@ -3,7 +3,7 @@ use std::ops::{Add, Div, Mul, MulAssign, Neg, Sub};
 use num_traits::{real::Real, Num};
 use rusttype::Scale;
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct Vector2<N: Num> {
     pub x: N,
     pub y: N,

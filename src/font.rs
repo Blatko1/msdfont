@@ -24,7 +24,7 @@ impl<'a> Font<'a> {
     }
 
     pub fn v_metrics(&self, scale: Scale) -> VMetrics {
-        self.inner.v_metrics(scale.into())
+        self.inner.v_metrics(scale)
     }
 
     pub fn v_metrics_unscaled(&self) -> VMetrics {
@@ -63,9 +63,9 @@ impl Glyph<'_> {
             x: offset.x,
             y: offset.y,
         };
-        let glyph = self.inner.scaled(scale.into()).positioned(pos);
+        let glyph = self.inner.scaled(scale).positioned(pos);
         let mut builder = PathBuilder::new(offset);
-        
+
         let bbox = BBox::from(glyph.pixel_bounding_box().unwrap());
         dbg!(bbox);
 
@@ -81,7 +81,7 @@ impl Glyph<'_> {
 pub struct GlyphOutline {
     pub(crate) bbox: BBox,
     pub(crate) shape: Shape,
-    pub(crate) offset: Offset
+    pub(crate) offset: Offset,
 }
 
 impl GlyphOutline {
@@ -90,7 +90,11 @@ impl GlyphOutline {
     ///
     /// Use the [`Self::generate`] functions to create a distance field bitmap.
     pub fn from_shape(shape: Shape, bbox: BBox, offset: Offset) -> Self {
-        Self { bbox, shape, offset }
+        Self {
+            bbox,
+            shape,
+            offset,
+        }
     }
 
     /// Returns a image bitmap with signed distance fields.
