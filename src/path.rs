@@ -71,7 +71,7 @@ impl PathBuilder {
 
         self.shoelace += quad.shoelace();
         self.temp_segments
-            .push(Segment::Quadratic(Quad::new(from, control, to)));
+            .push(Segment::Quad(Quad::new(from, control, to)));
         self.last_point = Some(to);
     }
 
@@ -96,7 +96,7 @@ impl PathBuilder {
 
         self.shoelace += curve.shoelace();
         self.temp_segments
-            .push(Segment::Cubic(Curve::new(from, ctrl1, ctrl2, to)));
+            .push(Segment::Curve(Curve::new(from, ctrl1, ctrl2, to)));
         self.last_point = Some(to);
         unimplemented!("Not implemented!!!")
     }
@@ -180,8 +180,8 @@ impl PathBuilder {
             for segment in contour.segments.iter_mut() {
                 match segment {
                     Segment::Line(l) => l.rescale(scale),
-                    Segment::Quadratic(q) => q.rescale(scale),
-                    Segment::Cubic(c) => c.rescale(scale),
+                    Segment::Quad(q) => q.rescale(scale),
+                    Segment::Curve(c) => c.rescale(scale),
                 }
             }
         }
@@ -218,7 +218,7 @@ impl OutlineBuilder for PathBuilder {
     /// `x1`, `y1`, `x2` and `y2` represent control points.
     fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
         //println!(
-        //    "cubic parabola: x1: {}, y1: {}, x2: {}, y2: {} x: {}, y: {}",
+        //    "cubic curve: x1: {}, y1: {}, x2: {}, y2: {} x: {}, y: {}",
         //    x1, y1, x2, y2, x, y
         //);
 

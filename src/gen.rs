@@ -24,8 +24,7 @@ pub fn gen_sdf(outline: &GlyphOutline, range: usize) -> Bitmap {
         for x in 0..width {
             let pixel = Vector2::new(x as f32 + 0.5, y as f32 + 0.5);
 
-            let signed_distance =
-                shortest_distance(shape, pixel).real_signed();
+            let signed_distance = shortest_distance(shape, pixel).real_signed();
 
             let normalized = (signed_distance / range as f32) + 0.5;
 
@@ -54,8 +53,7 @@ pub fn gen_pseudo_sdf(outline: &GlyphOutline, range: usize) -> Bitmap {
         for x in 0..width as usize {
             let pixel = Vector2::new(x as f32 + 0.5, y as f32 + 0.5);
 
-            let signed_distance =
-                shortest_distance(shape, pixel).real_signed();
+            let signed_distance = shortest_distance(shape, pixel).real_signed();
 
             let normalized = (signed_distance / range as f32) + 0.5;
 

@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use crate::shape::{Line, Quad};
+use crate::shape::{Curve, Line, Quad};
 use crate::vector::Vector2;
 
 // TODO is this needed?
@@ -63,7 +63,7 @@ impl PartialOrd for Distance {
     }
 }
 
-pub fn line_signed_distance(line: Line, point: Vector2<f32>) -> Distance {
+pub fn line_signed_distance(line: &Line, point: Vector2<f32>) -> Distance {
     let p0 = line.from;
     let p1 = line.to;
     let p = point;
@@ -88,7 +88,7 @@ pub fn line_signed_distance(line: Line, point: Vector2<f32>) -> Distance {
     let extended_dist = extend_bezier_p.magnitude();
 
     // Invert the vector to get distance from bezier line to "p".
-    let p_bezier = bezier_p.neg();
+    let p_bezier = std::ops::Neg::neg(bezier_p);
     let ortho: f32 = if p_bezier.is_zero() {
         0.0
     } else {
@@ -105,7 +105,7 @@ pub fn line_signed_distance(line: Line, point: Vector2<f32>) -> Distance {
     }
 }
 
-pub fn quad_signed_distance(quad: Quad, point: Vector2<f32>) -> Distance {
+pub fn quad_signed_distance(quad: &Quad, point: Vector2<f32>) -> Distance {
     let p0 = quad.from;
     let p1 = quad.ctrl;
     let p2 = quad.to;
@@ -172,6 +172,11 @@ pub fn quad_signed_distance(quad: Quad, point: Vector2<f32>) -> Distance {
         orthogonality,
         sign,
     }
+}
+
+#[allow(unused)]
+pub fn curve_signed_distance(curve: &Curve, point: Vector2<f32>) -> Distance {
+    unimplemented!()
 }
 
 fn quadratic_roots(a: f32, b: f32, c: f32) -> [Option<f32>; 2] {
@@ -256,11 +261,14 @@ fn cubic_roots(a: f32, b: f32, c: f32, d: f32) -> [Option<f32>; 3] {
 /// Procedure explained at:
 /// https://web.archive.org/web/20121001232059/http://paulbourke.net/geometry/lineline2d/
 pub fn line_line_intersection(
-    p0: Vector2<f32>,
-    p1: Vector2<f32>,
-    p2: Vector2<f32>,
-    p3: Vector2<f32>,
+    line1: &Line,
+    line2: &Line,
 ) -> Option<Vector2<f32>> {
+    let p0 = line1.from;
+    let p1 = line1.to;
+    let p2 = line2.from;
+    let p3 = line2.to;
+
     // TODO adapt this function with in mind that intersections will rarely happen
     let x0_x2 = p0.x - p2.x;
     let y0_y2 = p0.y - p2.y;
@@ -288,7 +296,7 @@ pub fn line_line_intersection(
 
         // println!("t1: {}, t2: {}", t1, t2);
 
-        if (t1 >= 0.0 && t1 <= 1.0) && (t2 >= 0.0 && t2 <= 1.0) {
+        if (0.0..=1.0).contains(&t1) && (0.0..=1.0).contains(&t2) {
             //assert_eq!(line_fn(p0, p1, t1), line_fn(p2, p3, t2));
             return Some(line_fn(p0, p1, t1));
         }
@@ -302,12 +310,15 @@ pub fn line_line_intersection(
 /// https://www.particleincell.com/2013/cubic-line-intersection/
 /// https://stackoverflow.com/questions/50129580/program-to-find-line-segment-and-bezier-curve-intersection
 pub fn quad_line_intersection(
-    q0: Vector2<f32>,
-    q1: Vector2<f32>,
-    q2: Vector2<f32>,
-    l0: Vector2<f32>,
-    l1: Vector2<f32>,
+    quad: &Quad,
+    line: &Line,
 ) -> [Option<Vector2<f32>>; 2] {
+    let q0 = quad.from;
+    let q1 = quad.ctrl;
+    let q2 = quad.to;
+    let l0 = line.from;
+    let l1 = line.to;
+
     let mut intersections = [None; 2];
     let a = (q0 + q2 - 2.0 * q1).cross(l1 - l0);
     let b = 2.0 * (q1 - q0).cross(l1 - l0);
@@ -335,54 +346,35 @@ pub fn quad_line_intersection(
     intersections
 }
 
-#[allow(dead_code)]
+#[allow(unused)]
 pub fn quad_quad_intersection(
-    a0: Vector2<f32>,
-    a1: Vector2<f32>,
-    a2: Vector2<f32>,
-    b0: Vector2<f32>,
-    b1: Vector2<f32>,
-    b2: Vector2<f32>,
+    quad1: &Quad,
+    quad2: &Quad,
 ) -> [Option<Vector2<f32>>; 4] {
     // TODO this
     [None, None, None, None]
 }
 
-#[allow(dead_code)]
-pub fn cubic_line_intersection(
-    c0: Vector2<f32>,
-    c1: Vector2<f32>,
-    c2: Vector2<f32>,
-    c3: Vector2<f32>,
-    l0: Vector2<f32>,
-    l1: Vector2<f32>,
+#[allow(unused)]
+pub fn curve_line_intersection(
+    curve: &Curve,
+    line: &Line,
 ) -> [Option<Vector2<f32>>; 3] {
     todo!()
 }
 
-#[allow(dead_code)]
-pub fn cubic_quad_intersection(
-    c0: Vector2<f32>,
-    c1: Vector2<f32>,
-    c2: Vector2<f32>,
-    c3: Vector2<f32>,
-    q0: Vector2<f32>,
-    q1: Vector2<f32>,
-    q2: Vector2<f32>,
+#[allow(unused)]
+pub fn curve_quad_intersection(
+    curve: &Curve,
+    quad: &Quad,
 ) -> [Option<Vector2<f32>>; 6] {
     todo!()
 }
 
-#[allow(dead_code)]
-pub fn cubic_cubic_intersection(
-    a0: Vector2<f32>,
-    a1: Vector2<f32>,
-    a2: Vector2<f32>,
-    a3: Vector2<f32>,
-    b0: Vector2<f32>,
-    b1: Vector2<f32>,
-    b2: Vector2<f32>,
-    b3: Vector2<f32>,
+#[allow(unused)]
+pub fn curve_curve_intersection(
+    curve1: &Curve,
+    curve2: &Curve,
 ) -> [Option<Vector2<f32>>; 9] {
     todo!()
 }
@@ -393,7 +385,7 @@ pub fn cubic_cubic_intersection(
 /// - `t` - function parameter
 // TODO maybe convert to macro!
 #[inline]
-#[allow(dead_code)]
+#[allow(unused)]
 pub fn line_fn(p0: Vector2<f32>, p1: Vector2<f32>, t: f32) -> Vector2<f32> {
     p0 + t * (p1 - p0)
 }
@@ -405,7 +397,7 @@ pub fn line_fn(p0: Vector2<f32>, p1: Vector2<f32>, t: f32) -> Vector2<f32> {
 /// - `t` - function parameter
 // TODO maybe convert to macro!
 #[inline]
-#[allow(dead_code)]
+#[allow(unused)]
 pub fn quadratic_fn(
     p0: Vector2<f32>,
     p1: Vector2<f32>,
@@ -418,86 +410,143 @@ pub fn quadratic_fn(
 #[test]
 fn line_quad_intersection_test() {
     // TODO maybe add more tests
-    let l1 = Vector2::new(4.0, 5.0);
-    let l2 = Vector2::new(10.0, 9.0);
-    let q1 = Vector2::new(2.5, 2.0);
-    let q2_ctrl = Vector2::new(3.0, 8.0);
-    let q3 = Vector2::new(10.0, 12.0);
+    // TEST 1
+    let line = Line {
+        from: Vector2::new(4.0, 5.0),
+        to: Vector2::new(10.0, 9.0),
+    };
 
-    assert_eq!(
-        quad_line_intersection(q1, q2_ctrl, q3, l1, l2),
-        [None, None]
-    );
+    let quad = Quad {
+        from: Vector2::new(2.5, 2.0),
+        ctrl: Vector2::new(3.0, 8.0),
+        to: Vector2::new(10.0, 12.0),
+    };
 
-    let l1 = Vector2::new(1.0, 1.0);
-    let l2 = Vector2::new(10.0, 10.0);
-    let q1 = Vector2::new(2.5, 2.0);
-    let q2_ctrl = Vector2::new(3.0, 8.0);
-    let q3 = Vector2::new(10.0, 12.0);
+    assert_eq!(quad_line_intersection(&quad, &line), [None, None]);
 
-    assert!(quad_line_intersection(q1, q2_ctrl, q3, l1, l2)[0].is_some());
-    assert!(quad_line_intersection(q1, q2_ctrl, q3, l1, l2)[1].is_none());
+    // TEST 2
+    let line = Line {
+        from: Vector2::new(1.0, 1.0),
+        to: Vector2::new(10.0, 10.0),
+    };
 
-    let l1 = Vector2::new(1.0, 1.0);
-    let l2 = Vector2::new(10.0, 10.0);
-    let q1 = Vector2::new(2.0, 2.1);
-    let q2_ctrl = Vector2::new(3.0, 8.0);
-    let q3 = Vector2::new(9.0, 8.0);
+    let quad = Quad {
+        from: Vector2::new(2.5, 2.0),
+        ctrl: Vector2::new(3.0, 8.0),
+        to: Vector2::new(10.0, 12.0),
+    };
 
-    assert!(quad_line_intersection(q1, q2_ctrl, q3, l1, l2)[0].is_none());
-    assert!(quad_line_intersection(q1, q2_ctrl, q3, l1, l2)[1].is_some());
+    assert!(quad_line_intersection(&quad, &line)[0].is_some());
+    assert!(quad_line_intersection(&quad, &line)[1].is_none());
+
+    // TEST 3
+    let line = Line {
+        from: Vector2::new(1.0, 1.0),
+        to: Vector2::new(10.0, 10.0),
+    };
+
+    let quad = Quad {
+        from: Vector2::new(2.0, 2.1),
+        ctrl: Vector2::new(3.0, 8.0),
+        to: Vector2::new(9.0, 8.0),
+    };
+
+    assert!(quad_line_intersection(&quad, &line)[0].is_none());
+    assert!(quad_line_intersection(&quad, &line)[1].is_some());
 }
 
 #[test]
 fn line_intersection_test() {
     // Parallel lines:
-    let p1 = Vector2::new(1.0, 1.0);
-    let p2 = Vector2::new(10.0, 1.0);
-    let p3 = Vector2::new(1.0, 20.0);
-    let p4 = Vector2::new(10.0, 20.0);
-    assert!(line_line_intersection(p1, p2, p3, p4).is_none());
+    let line1 = Line {
+        from: Vector2::new(1.0, 1.0),
+        to: Vector2::new(10.0, 1.0),
+    };
+
+    let line2 = Line {
+        from: Vector2::new(1.0, 20.0),
+        to: Vector2::new(10.0, 20.0),
+    };
+
+    assert!(line_line_intersection(&line1, &line2).is_none());
 
     // Coincident lines:
-    let p1 = Vector2::new(1.0, 1.0);
-    let p2 = Vector2::new(10.0, 3.0);
-    let p3 = Vector2::new(1.0, 1.0);
-    let p4 = Vector2::new(10.0, 3.0);
-    assert!(line_line_intersection(p1, p2, p3, p4).is_none());
+    let line1 = Line {
+        from: Vector2::new(1.0, 1.0),
+        to: Vector2::new(10.0, 3.0),
+    };
+
+    let line2 = Line {
+        from: Vector2::new(1.0, 1.0),
+        to: Vector2::new(10.0, 3.0),
+    };
+
+    assert!(line_line_intersection(&line1, &line2).is_none());
 
     // Crossing lines:
-    let p1 = Vector2::new(1.0, 1.0);
-    let p2 = Vector2::new(10.0, 10.0);
-    let p3 = Vector2::new(1.0, 10.0);
-    let p4 = Vector2::new(3.0, 0.0);
-    assert!(line_line_intersection(p1, p2, p3, p4).is_some());
+    let line1 = Line {
+        from: Vector2::new(1.0, 1.0),
+        to: Vector2::new(10.0, 10.0),
+    };
+
+    let line2 = Line {
+        from: Vector2::new(1.0, 10.0),
+        to: Vector2::new(3.0, 0.0),
+    };
+
+    assert!(line_line_intersection(&line1, &line2).is_some());
 
     // Lines meet at ending point:
-    let p1 = Vector2::new(1.0, 1.0);
-    let p2 = Vector2::new(10.0, 10.0);
-    let p3 = Vector2::new(10.0, 10.0);
-    let p4 = Vector2::new(20.0, 1.0);
-    assert!(line_line_intersection(p1, p2, p3, p4).is_some());
+    let line1 = Line {
+        from: Vector2::new(1.0, 1.0),
+        to: Vector2::new(10.0, 10.0),
+    };
+
+    let line2 = Line {
+        from: Vector2::new(10.0, 10.0),
+        to: Vector2::new(20.0, 1.0),
+    };
+
+    assert!(line_line_intersection(&line1, &line2).is_some());
 
     // Not parallel, not crossing lines:
-    let p1 = Vector2::new(1.0, 10.0);
-    let p2 = Vector2::new(3.0, 1.0);
-    let p3 = Vector2::new(3.0, 10.0);
-    let p4 = Vector2::new(10.0, 15.0);
-    assert!(line_line_intersection(p1, p2, p3, p4).is_none());
+    let line1 = Line {
+        from: Vector2::new(1.0, 10.0),
+        to: Vector2::new(3.0, 1.0),
+    };
+
+    let line2 = Line {
+        from: Vector2::new(3.0, 10.0),
+        to: Vector2::new(10.0, 15.0),
+    };
+
+    assert!(line_line_intersection(&line1, &line2).is_none());
 
     // On the same line crossing:
-    let p1 = Vector2::new(1.0, 1.0);
-    let p2 = Vector2::new(10.0, 10.0);
-    let p3 = Vector2::new(8.0, 8.0);
-    let p4 = Vector2::new(20.0, 20.0);
-    assert!(line_line_intersection(p1, p2, p3, p4).is_none());
+    let line1 = Line {
+        from: Vector2::new(1.0, 1.0),
+        to: Vector2::new(10.0, 10.0),
+    };
+
+    let line2 = Line {
+        from: Vector2::new(8.0, 8.0),
+        to: Vector2::new(20.0, 20.0),
+    };
+
+    assert!(line_line_intersection(&line1, &line2).is_none());
 
     // On the same line but not crossing:
-    let p1 = Vector2::new(1.0, 1.0);
-    let p2 = Vector2::new(100.0, 100.0);
-    let p3 = Vector2::new(110.0, 110.0);
-    let p4 = Vector2::new(200.0, 200.0);
-    assert!(line_line_intersection(p1, p2, p3, p4).is_none());
+    let line1 = Line {
+        from: Vector2::new(1.0, 1.0),
+        to: Vector2::new(100.0, 100.0),
+    };
+
+    let line2 = Line {
+        from: Vector2::new(110.0, 110.0),
+        to: Vector2::new(200.0, 200.0),
+    };
+
+    assert!(line_line_intersection(&line1, &line2).is_none());
 }
 
 #[test]
@@ -521,7 +570,7 @@ fn cubic_root_test() {
     assert!(discriminant > 0.0);
 }
 
-#[allow(dead_code)]
+#[allow(unused)]
 fn test_find_cubic_roots(
     _a: f32,
     _b: f32,

@@ -15,19 +15,6 @@ impl Shape {
         Self { contours }
     }
 
-    // TODO maybe change to [`Scale`].
-    // pub fn scale(&mut self, scale: f32) {
-    //     for contour in self.contours.iter_mut() {
-    //         for segment in contour.segments.iter_mut() {
-    //             match segment {
-    //                 Segment::Line(l) => l.rescale(scale),
-    //                 Segment::Quadratic(q) => q.rescale(scale),
-    //                 Segment::Cubic(c) => c.rescale(scale),
-    //             }
-    //         }
-    //     }
-    // }
-
     /// Returns a bounding box which is created paying attention to
     /// line and curve points instead of their bodies.
     /// TODO: maybe not needed
@@ -44,7 +31,7 @@ impl Shape {
                         y_iter.push(l.from.y);
                         y_iter.push(l.to.y);
                     }
-                    Segment::Quadratic(q) => {
+                    Segment::Quad(q) => {
                         x_iter.push(q.from.x);
                         x_iter.push(q.ctrl.x);
                         x_iter.push(q.to.x);
@@ -53,7 +40,7 @@ impl Shape {
                         y_iter.push(q.ctrl.y);
                         y_iter.push(q.to.y);
                     }
-                    Segment::Cubic(c) => {
+                    Segment::Curve(c) => {
                         x_iter.push(c.from.x);
                         x_iter.push(c.ctrl1.x);
                         x_iter.push(c.ctrl2.x);
@@ -133,38 +120,27 @@ impl Contour {
 #[derive(Debug)]
 pub enum Segment {
     Line(Line),
-    Quadratic(Quad),
-    Cubic(Curve),
+    Quad(Quad),
+    Curve(Curve),
 }
 
 impl Segment {
     fn distance(&self, point: Vector2<f32>) -> Distance {
         match self {
             Segment::Line(l) => l.calculate_distance(point),
-            Segment::Quadratic(q) => q.calculate_distance(point),
-            Segment::Cubic(c) => c.calculate_distance(point),
+            Segment::Quad(q) => q.calculate_distance(point),
+            Segment::Curve(c) => c.calculate_distance(point),
         }
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+/// Represents a parametric line with constants:
+///
+/// - `from` - starting point
+/// - `to` - ending point
+#[derive(Debug)]
 pub struct Line {
     pub from: Vector2<f32>,
-    pub to: Vector2<f32>,
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct Quad {
-    pub from: Vector2<f32>,
-    pub ctrl: Vector2<f32>,
-    pub to: Vector2<f32>,
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct Curve {
-    pub from: Vector2<f32>,
-    pub ctrl1: Vector2<f32>,
-    pub ctrl2: Vector2<f32>,
     pub to: Vector2<f32>,
 }
 
@@ -180,7 +156,7 @@ impl Line {
     }
 
     pub fn calculate_distance(&self, point: Vector2<f32>) -> Distance {
-        crate::math::line_signed_distance(*self, point)
+        crate::math::line_signed_distance(self, point)
     }
 
     // TODO explain
@@ -188,6 +164,18 @@ impl Line {
     pub fn shoelace(&self) -> f32 {
         self.from.cross(self.to)
     }
+}
+
+/// Represents a parametric `quadratic` parabola with constants:
+///
+/// - `from` - starting point
+/// - `ctrl` - control point
+/// - `to` - ending point
+#[derive(Debug)]
+pub struct Quad {
+    pub from: Vector2<f32>,
+    pub ctrl: Vector2<f32>,
+    pub to: Vector2<f32>,
 }
 
 impl Quad {
@@ -206,7 +194,7 @@ impl Quad {
     }
 
     pub fn calculate_distance(&self, point: Vector2<f32>) -> Distance {
-        crate::math::quad_signed_distance(*self, point)
+        crate::math::quad_signed_distance(self, point)
     }
 
     // TODO explain
@@ -214,6 +202,20 @@ impl Quad {
     pub fn shoelace(&self) -> f32 {
         self.from.cross(self.to)
     }
+}
+
+/// Represents a parametric `cubic` curve with constants:
+///
+/// - `from` - starting point
+/// - `ctrl1` - control point
+/// - `ctrl2` - control point
+/// - `to` - ending point
+#[derive(Debug)]
+pub struct Curve {
+    pub from: Vector2<f32>,
+    pub ctrl1: Vector2<f32>,
+    pub ctrl2: Vector2<f32>,
+    pub to: Vector2<f32>,
 }
 
 impl Curve {
@@ -240,7 +242,7 @@ impl Curve {
 
     #[inline]
     pub fn calculate_distance(&self, point: Vector2<f32>) -> Distance {
-        unimplemented!()
+        crate::math::curve_signed_distance(self, point)
     }
 
     // TODO explain

@@ -65,13 +65,6 @@ impl<N: Real> Vector2<N> {
     }
 }
 
-impl<N: Num + std::ops::Neg<Output = N>> Vector2<N> {
-    #[inline]
-    pub fn neg(self) -> Self {
-        -self
-    }
-}
-
 impl<N: Num> Add for Vector2<N> {
     type Output = Self;
 
